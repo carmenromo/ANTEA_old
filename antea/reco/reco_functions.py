@@ -115,10 +115,11 @@ def sensors_info(ave_true, sens_pos, sens_pos_cyl, sns_over_thr, charges_over_th
     closest = find_closest_sipm(ave_true[0], ave_true[1], ave_true[2],
                                 sens_pos, sns_over_thr, charges_over_thr)
 
-    ampl1  = 0
-    count1 = 0
-    pos1   = []
-    q1     = []
+    ampl1    = 0
+    count1   = 0
+    pos1     = []
+    pos1_cyl = []
+    q1       = []
 
     for sns_id, charge in zip(sns_over_thr, charges_over_thr):
         pos         = sens_pos    [sns_id]
