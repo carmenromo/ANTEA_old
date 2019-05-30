@@ -88,7 +88,6 @@ def wvf_passing_filter(nsteps, th_start):
             charges_over_thr = tot_charges[indices_over_thr]
 
             if len(charges_over_thr) == 0:
-                raise ValueError('no charges above threshold')
                 continue
 
             region1_info = rf.sensors_info(ave_true1,
