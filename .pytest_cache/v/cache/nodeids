@@ -1,0 +1,5 @@
+[
+  "antea/io/mc_io_test.py::test_read_sensor_response",
+  "antea/io/mc_io_test.py::test_read_sensor_tof_response",
+  "antea/io/mc_io_test.py::test_read_last_sensor_response"
+]

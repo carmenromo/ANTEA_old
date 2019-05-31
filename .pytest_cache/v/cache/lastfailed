@@ -1,0 +1,4 @@
+{
+  "antea/sensors/sensor_functions_test.py::test_simulate_sipm_response[sipm_adc_to_pes0-pe_resolution0]": true,
+  "antea/sensors/sensor_functions_test.py::test_simulate_sipm_response[sipm_adc_to_pes0]": true
+}
