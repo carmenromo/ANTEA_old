@@ -26,7 +26,7 @@ def true_photoelect(h5in, true_file, evt, compton=False):
                 if mother.primary and np.isclose(mother.E*1000., 510.999, atol=1.e-3):
                     if compton==True: pass
                     else:
-                        if np.isclose(sum(h.E for h in part.hits), 0.476443, atol=1.e-6): pass
+                        if sum(h.E for h in part.hits) > 0.476443: pass
                         else: continue
 
                     if mother.p[1] > 0.: ave_true1 = get_true_pos(part)
