@@ -1,4 +1,5 @@
 import os
+import math
 import numpy  as np
 import pandas as pd
 
@@ -28,6 +29,14 @@ def test_allowed_error_in_inequality(f1, err):
 
     f2 = f1 + 2*err
     assert not rf.greater_or_equal(f1, f2, err)
+
+
+def test_from_cartesian_to_cyl():
+    cart_pos = np.array([np.array([1, 1, 1])])
+    cyl_pos  = rf.from_cartesian_to_cyl(cart_pos)
+    assert cyl_pos[0][0] == math.sqrt(2)
+    assert cyl_pos[0][1] == math.pi/4
+    assert cyl_pos[0][2] == cart_pos[0][2]
 
 
 def test_find_SiPMs_over_threshold(ANTEADATADIR):
