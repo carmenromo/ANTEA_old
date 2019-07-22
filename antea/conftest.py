@@ -18,7 +18,7 @@ def ANTEADIR():
 
 @pytest.fixture(scope = 'session')
 def ANTEADATADIR(ANTEADIR):
-    return os.path.join(ANTEADIR, "test_data/")
+    return os.path.join(ANTEADIR, "testdata/")
 
 
 @pytest.fixture(scope = 'session')
