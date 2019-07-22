@@ -53,9 +53,9 @@ def find_closest_sipm(point: Tuple[float, float, float], sipms: pd.DataFrame) ->
    return closest_sipm
 
 
-def divide_sipms_in_two_emispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
+def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
     """
-    Divide the SiPMs with charge between two emispheres, using a given reference direction (reference_pos) as
+    Divide the SiPMs with charge between two hemispheres, using a given reference direction (reference_pos) as
     a discriminator.
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
@@ -113,8 +113,8 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
                                                                              Tuple[float, float, float]]:
     """
     Find the SiPM with maximum charge. The set of sensors around it are labelled as 1.
-    The sensors on the opposite emisphere are labelled as 2.
-    The true position of the first gamma interaction is also returned for each emisphere.
+    The sensors on the opposite hemisphere are labelled as 2.
+    The true position of the first gamma interaction is also returned for each hemisphere.
     A range of charge is given to select singles in the photoelectric peak.
     """
     max_sns = sns_response[sns_response.charge == sns_response.charge.max()]
@@ -128,7 +128,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
 
-    pos1, pos2, q1, q2 = divide_sipms_in_two_emispheres(sns_positions, sns_charges, max_pos)
+    pos1, pos2, q1, q2 = divide_sipms_in_two_hemispheres(sns_positions, sns_charges, max_pos)
 
     tot_q1 = sum(q1)
     tot_q2 = sum(q2)
