@@ -53,3 +53,26 @@ def test_find_closest_sipm():
     min_sipm      = np.isclose(distances, min_dist)
     closest_sipm2 = DataSiPM_idx[min_sipm]
     assert np.all(closest_sipm) == np.all(closest_sipm2)
+
+
+def test_divide_sipms_in_two_hemispheres(ANTEADATADIR):
+    DataSiPM      = db.DataSiPM('petalo', 0)
+    DataSiPM_idx  = DataSiPM.set_index('SensorID')
+    PATH_IN       = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    sns_response  = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    max_sns       = sns_response[sns_response.charge == sns_response.charge.max()]
+    max_sipm      = DataSiPM_idx.loc[max_sns.sensor_id]
+    max_pos       = np.array([max_sipm.X.values, max_sipm.Y.values, max_sipm.Z.values]).transpose()[0]
+    sipms         = DataSiPM_idx.loc[sns_response.sensor_id]
+    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
+    sns_charges   = sns_response.charge
+
+    pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_positions, sns_charges, max_pos)
+
+    scalar_prod1 = np.array([np.dot(max_pos, p1) for p1 in pos1])
+    scalar_prod2 = np.array([np.dot(max_pos, p2) for p2 in pos2])
+
+    assert len(pos1) == len(q1)
+    assert len(pos2) == len(q2)
+    assert (scalar_prod1 > 0).all()
+    assert (scalar_prod2 < 0).all()
