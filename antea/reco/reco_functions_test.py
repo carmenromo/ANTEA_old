@@ -42,16 +42,14 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
 
 def test_find_closest_sipm():
     DataSiPM     = db.DataSiPM('petalo', 0)
-    sipms        = DataSiPM.set_index('SensorID')
+    DataSiPM_idx = DataSiPM.set_index('SensorID')
     point        = np.array([26.70681, -183.4894, -20.824465])
-    closest_sipm = rf.find_closest_sipm(point, sipms)
+    closest_sipm = rf.find_closest_sipm(point, DataSiPM_idx)
 
-    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
+    sns_positions = np.array([DataSiPM_idx.X.values, DataSiPM_idx.Y.values, DataSiPM_idx.Z.values]).transpose()
     subtr         = np.subtract(point, sns_positions)
     distances     = [np.linalg.norm(d) for d in subtr]
     min_dist      = np.min(distances)
     min_sipm      = np.isclose(distances, min_dist)
-    closest_sipm2 = sipms[min_sipm]
+    closest_sipm2 = DataSiPM_idx[min_sipm]
     assert np.all(closest_sipm) == np.all(closest_sipm2)
-
-
