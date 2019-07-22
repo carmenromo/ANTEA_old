@@ -5,7 +5,8 @@ import pandas as pd
 from hypothesis.strategies import floats
 from hypothesis            import given
 
-from . import reco_functions as rf
+from .           import reco_functions as rf
+from .. database import load_db        as db
 
 f             = floats(min_value=1,     max_value=2)
 f_lower       = floats(min_value=0,     max_value=1)
@@ -37,3 +38,20 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
     df_below_thr = wvf_df.groupby(['event_id','sensor_id'])[['charge']].sum()
     df_below_thr = df_below_thr[df_below_thr.charge <= threshold].reset_index()
     assert len(df_over_thr) == len(wvf_df) - len(df_below_thr)
+
+
+def test_find_closest_sipm():
+    DataSiPM     = db.DataSiPM('petalo', 0)
+    sipms        = DataSiPM.set_index('SensorID')
+    point        = np.array([26.70681, -183.4894, -20.824465])
+    closest_sipm = rf.find_closest_sipm(point, sipms)
+
+    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
+    subtr         = np.subtract(point, sns_positions)
+    distances     = [np.linalg.norm(d) for d in subtr]
+    min_dist      = np.min(distances)
+    min_sipm      = np.isclose(distances, min_dist)
+    closest_sipm2 = sipms[min_sipm]
+    assert np.all(closest_sipm) == np.all(closest_sipm2)
+
+
