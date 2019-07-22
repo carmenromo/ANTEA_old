@@ -32,12 +32,12 @@ def test_allowed_error_in_inequality(f1, err):
 
 def test_find_SiPMs_over_threshold(ANTEADATADIR):
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
-    wvf_df       = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
     threshold    = 2
-    df_over_thr  = rf.find_SiPMs_over_threshold(wvf_df, threshold)
-    df_below_thr = wvf_df.groupby(['event_id','sensor_id'])[['charge']].sum()
+    df_over_thr  = rf.find_SiPMs_over_threshold(sns_response, threshold)
+    df_below_thr = sns_response.groupby(['event_id','sensor_id'])[['charge']].sum()
     df_below_thr = df_below_thr[df_below_thr.charge <= threshold].reset_index()
-    assert len(df_over_thr) == len(wvf_df) - len(df_below_thr)
+    assert len(df_over_thr) == len(sns_response) - len(df_below_thr)
 
 
 def test_find_closest_sipm():
