@@ -6,8 +6,10 @@ import pandas as pd
 from hypothesis.strategies import floats
 from hypothesis            import given
 
-from .           import reco_functions as rf
-from .. database import load_db        as db
+from .           import reco_functions   as rf
+from .           import mctrue_functions as mcf
+from .. database import load_db          as db
+
 
 f             = floats(min_value=1,     max_value=2)
 f_lower       = floats(min_value=0,     max_value=1)
@@ -85,3 +87,48 @@ def test_divide_sipms_in_two_hemispheres(ANTEADATADIR):
     assert len(pos2) == len(q2)
     assert (scalar_prod1 > 0).all()
     assert (scalar_prod2 < 0).all()
+
+
+def test_assign_sipms_to_gammas(ANTEADATADIR):
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    DataSiPM     = db.DataSiPM('petalo', 0)
+    DataSiPM_idx = DataSiPM.set_index('SensorID')
+    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    threshold    = 2
+    sel_df       = rf.find_SiPMs_over_threshold(sns_response, threshold)
+
+    particles = pd.read_hdf(PATH_IN, 'MC/particles')
+    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    events    = particles.event_id.unique()
+
+    for evt in events[:]:
+        evt_parts = particles[particles.event_id == evt]
+        evt_hits  = hits     [hits     .event_id == evt]
+
+        select, true_pos = mcf.select_photoelectric(evt_parts, evt_hits)
+
+        if not select: continue
+        if (len(true_pos) == 1) & (evt_hits.energy.sum() > 0.511): continue
+
+        waveforms = sel_df[sel_df.event_id == evt]
+        if len(waveforms) == 0: continue
+
+        pos1, pos2, q1, q2 = rf.assign_sipms_to_gammas(waveforms, true_pos, DataSiPM_idx)
+
+        sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
+        sns_closest_pos = [np.array([rf.find_closest_sipm(pos, sipms).X.values,
+                                     rf.find_closest_sipm(pos, sipms).Y.values,
+                                     rf.find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
+        scalar_prod1 = np.array([np.dot(sns_closest_pos[0], p1) for p1 in pos1])
+
+        assert len(q1) == len(pos1)
+        assert len(sns_closest_pos) <= 2
+        assert (scalar_prod1 > 0).all()
+
+        if len(true_pos) < 2:
+            assert len(q2)   == 0
+            assert len(pos2) == 0
+        else:
+            scalar_prod2 = np.array([np.dot(sns_closest_pos[0], p2) for p2 in pos2])
+            assert len(q2) == len(pos2)
+            assert (scalar_prod2 < 0).all()

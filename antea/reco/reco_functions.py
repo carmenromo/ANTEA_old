@@ -60,15 +60,15 @@ def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, 
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
 
-    q1, q2     = [], []
+    q1,   q2   = [], []
     pos1, pos2 = [], []
     for sns_pos, charge in zip(sns_positions, sns_charges):
         scalar_prod = sum(a*b for a, b in zip(sns_pos, reference_pos))
         if scalar_prod > 0.:
-            q1.append(charge)
+            q1  .append(charge)
             pos1.append(sns_pos)
         else:
-            q2.append(charge)
+            q2  .append(charge)
             pos2.append(sns_pos)
 
     return pos1, pos2, np.array(q1), np.array(q2)
@@ -84,7 +84,7 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
     sns_closest_pos = [np.array([find_closest_sipm(pos, sipms).X.values, find_closest_sipm(pos, sipms).Y.values, find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
 
-    q1, q2     = [], []
+    q1,   q2   = [], []
     pos1, pos2 = [], []
 
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
@@ -96,13 +96,13 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     for sns_pos, charge in zip(sns_positions, sns_charges):
         scalar_prod = sum(a*b for a, b in zip(sns_pos, closest_pos))
         if scalar_prod > 0.:
-            q1.append(charge)
+            q1  .append(charge)
             pos1.append(sns_pos)
         elif len(sns_closest_pos) == 2:
-            q2.append(charge)
+            q2  .append(charge)
             pos2.append(sns_pos)
 
-    return q1, q2, pos1, pos2
+    return pos1, pos2, q1, q2
 
 
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
