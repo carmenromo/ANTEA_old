@@ -1,10 +1,9 @@
 import numpy  as np
 import pandas as pd
 
-import antea.reco.reco_functions as rf
+from typing     import Sequence, Tuple
 
-from typing import Sequence, Tuple
-
+from antea.reco import reco_functions   as rf
 
 def find_hits_of_given_particles(p_ids: Sequence[int], hits: pd.DataFrame) -> pd.DataFrame:
     """
