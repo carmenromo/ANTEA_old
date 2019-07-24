@@ -34,11 +34,34 @@ def test_allowed_error_in_inequality(f1, err):
 
 
 def test_from_cartesian_to_cyl():
+    """
+    This test checks that the function from_cartesian_to_cyl transforms
+    an array of cartesian coordinates into cylindrical coordinates.
+    For example:
+    cart_array = (       1,        1, 1)
+    cyl_array  = (1.414213, 0.785398, 1)
+    """
     cart_pos = np.array([np.array([1, 1, 1])])
     cyl_pos  = rf.from_cartesian_to_cyl(cart_pos)
-    assert cyl_pos[0][0] == math.sqrt(2)
-    assert cyl_pos[0][1] == math.pi/4
-    assert cyl_pos[0][2] == cart_pos[0][2]
+    assert np.isclose(cyl_pos[0][0], math.sqrt(2))
+    assert np.isclose(cyl_pos[0][1], math.pi/4)
+    assert np.isclose(cyl_pos[0][2], cart_pos[0][2])
+
+
+x = floats(min_value=-1000, max_value=1000)
+y = floats(min_value=-1000, max_value=1000)
+z = floats(min_value=-1000, max_value=1000)
+
+@given(x, y, z)
+def test_from_cartesian_to_cyl2(x, y, z):
+    """
+    This tests checks properties of the cylindrical coordinates:
+    that r is always positive and phi is [-pi, pi]
+    """
+    cart_pos = np.array([np.array([x, y, z])])
+    cyl_pos  = rf.from_cartesian_to_cyl(cart_pos)
+    assert  cyl_pos[0][0] >= 0
+    assert (cyl_pos[0][1] >= -math.pi) & (cyl_pos[0][1] <= math.pi)
 
 
 def test_find_SiPMs_over_threshold(ANTEADATADIR):
