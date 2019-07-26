@@ -74,10 +74,11 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
     assert len(df_over_thr) == len(sns_response) - len(df_below_thr)
 
 
-def test_find_closest_sipm():
+@given(x, y, z)
+def test_find_closest_sipm(x, y, z):
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
-    point        = np.array([26.70681, -183.4894, -20.824465])
+    point        = np.array([x, y, z])
     closest_sipm = rf.find_closest_sipm(point, DataSiPM_idx)
 
     sns_positions = np.array([DataSiPM_idx.X.values, DataSiPM_idx.Y.values, DataSiPM_idx.Z.values]).transpose()
@@ -86,7 +87,9 @@ def test_find_closest_sipm():
     min_dist      = np.min(distances)
     min_sipm      = np.isclose(distances, min_dist)
     closest_sipm2 = DataSiPM_idx[min_sipm]
+
     assert np.all(closest_sipm) == np.all(closest_sipm2)
+    assert min_dist > 0
 
 
 def test_divide_sipms_in_two_hemispheres(ANTEADATADIR):
