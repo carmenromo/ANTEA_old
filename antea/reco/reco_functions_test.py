@@ -1,19 +1,18 @@
 import os
 import math
-import numpy  as np
-import pandas as pd
+import numpy                 as np
+import pandas                as pd
+import hypothesis.strategies as st
 
-from hypothesis.strategies import floats
-from hypothesis            import given
-
+from hypothesis  import given
 from .           import reco_functions   as rf
 from .           import mctrue_functions as mcf
 from .. database import load_db          as db
 
 
-f             = floats(min_value=1,     max_value=2)
-f_lower       = floats(min_value=0,     max_value=1)
-allowed_error = floats(min_value=1.e-8, max_value=1.e-6)
+f             = st.floats(min_value=1,     max_value=2)
+f_lower       = st.floats(min_value=0,     max_value=1)
+allowed_error = st.floats(min_value=1.e-8, max_value=1.e-6)
 
 
 @given(f, f_lower)
@@ -48,9 +47,9 @@ def test_from_cartesian_to_cyl():
     assert np.isclose(cyl_pos[0][2], cart_pos[0][2])
 
 
-x = floats(min_value=-1000, max_value=1000)
-y = floats(min_value=-1000, max_value=1000)
-z = floats(min_value=-1000, max_value=1000)
+x = st.floats(min_value=-1000, max_value=1000)
+y = st.floats(min_value=-1000, max_value=1000)
+z = st.floats(min_value=-1000, max_value=1000)
 
 @given(x, y, z)
 def test_from_cartesian_to_cyl2(x, y, z):
@@ -92,19 +91,31 @@ def test_find_closest_sipm(x, y, z):
     assert min_dist > 0
 
 
-def test_divide_sipms_in_two_hemispheres(ANTEADATADIR):
-    DataSiPM      = db.DataSiPM('petalo', 0)
-    DataSiPM_idx  = DataSiPM.set_index('SensorID')
-    PATH_IN       = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
-    sns_response  = pd.read_hdf(PATH_IN, 'MC/waveforms')
-    max_sns       = sns_response[sns_response.charge == sns_response.charge.max()]
-    max_sipm      = DataSiPM_idx.loc[max_sns.sensor_id]
-    max_pos       = np.array([max_sipm.X.values, max_sipm.Y.values, max_sipm.Z.values]).transpose()[0]
-    sipms         = DataSiPM_idx.loc[sns_response.sensor_id]
-    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
-    sns_charges   = sns_response.charge
+a = st.floats(min_value=-1000, max_value=1000)
+b = st.floats(min_value=-1000, max_value=1000)
+c = st.floats(min_value=-1000, max_value=1000)
 
-    pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_positions, sns_charges, max_pos)
+elements =st.tuples(st.floats  (min_value=-1000, max_value=1000),
+                    st.floats  (min_value=-1000, max_value=1000),
+                    st.floats  (min_value=-1000, max_value=1000),
+                    st.integers(min_value=1,     max_value=10000))
+l = st.lists(elements, min_size=2, max_size=1000)
+
+@given(x, y, z, a, b, c, l)
+def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
+    if x == 0. and y == 0. and z == 0.:
+        return
+    if a == 0. and b == 0. and c == 0.:
+        return
+    if (np.all(el)==0. for el in l):
+        return
+
+    point         = np.array([x, y, z])
+    max_pos       = np.array([a, b, c])
+    sns_positions = np.array([el[:3] for el in l])
+    sns_charges   = np.array([el [3] for el in l])
+
+    pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_positions, sns_charges, point)
 
     scalar_prod1 = np.array([np.dot(max_pos, p1) for p1 in pos1])
     scalar_prod2 = np.array([np.dot(max_pos, p2) for p2 in pos2])
