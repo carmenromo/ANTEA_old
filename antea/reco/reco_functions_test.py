@@ -64,6 +64,11 @@ def test_from_cartesian_to_cyl2(x, y, z):
 
 
 def test_find_SiPMs_over_threshold(ANTEADATADIR):
+    """
+    Checks that the number of SiPMs that detected charge above
+    the threshold plus the number of SiPMs that detected charge
+    below the threshold are equal to the total number of sensors.
+    """
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
     threshold    = 2
@@ -75,6 +80,11 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
 
 @given(x, y, z)
 def test_find_closest_sipm(x, y, z):
+    """
+    Checks that the function find_closest_sipm returns the position
+    of the closest SiPM to a given point, and the distance between
+    them is a positive quantity.
+    """
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     point        = np.array([x, y, z])
@@ -103,6 +113,14 @@ l = st.lists(elements, min_size=2, max_size=1000)
 
 @given(x, y, z, a, b, c, l)
 def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
+    """
+    This test checks that given a point, all the positions of a list of sensor
+    positions and charges are divided in two hemispheres.
+    The way of testing it is by checking that the scalar product of the position
+    of the sensors in the same hemisphere than the point, is positive.
+    Every point in the center of coordinates is neglected in order to avoid
+    null scalar prod.
+    """
     if x == 0. and y == 0. and z == 0.:
         return
     if a == 0. and b == 0. and c == 0.:
