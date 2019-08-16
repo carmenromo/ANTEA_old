@@ -105,8 +105,36 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     return pos1, pos2, q1, q2
 
 
+def average_daughter_hits_position(particles: pd.DataFrame, hits: pd.DataFrame, mother_id: int,
+                                   gamma_pos: Tuple[float, float, float], min_t: int) -> Tuple[Tuple[float, float, float], int]:
+    """
+    Returns the average position and the min time of the hits
+    of the daughters of the primary gammas.
+    """
+    min_t    = particles[ particles.mother_id == mother_id].initial_t.min()
+    part_id  = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
+    sel_hits = find_hits_of_given_particles(part_id, hits)
+
+    hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
+    gamma_pos     = np.average(hit_positions, axis=0, weights=sel_hits.energy)
+    return gamma_pos, min_t
+
+
+def average_gamma_hits_position(hits: pd.DataFrame, part_id: int, gamma_pos: Tuple[float, float, float],
+                                min_t: int) -> Tuple[Tuple[float, float, float], int]:
+    """
+    Returns the average position and the min time of the hits of the primary gammas.
+    """
+    g_min = hits[hits.particle_id == part_id].time.min()
+    if min_t < 0 or g_min < min_t:
+        min_t     = g_min
+        g_hit     = hits[(hits.particle_id == part_id) & (hits.time == g_min)]
+        gamma_pos = np.array([g_hit.x.values, g_hit.y.values, g_hit.z.values]).transpose()[0]
+    return gamma_pos, min_t
+
+
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
-                        particles: pd.DataFrame, hits: pd.DataFrame)-> Tuple[Sequence[float], Sequence[float],
+                        particles: pd.DataFrame, hits: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float],
                                                                              Sequence[Tuple[float, float, float]],
                                                                              Sequence[Tuple[float, float, float]],
                                                                              Tuple[float, float, float],
@@ -151,33 +179,17 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     min_t1 = min_t2 = -1
     gamma_pos1, gamma_pos2 = None, None
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        min_t1   = sel_all[sel_all.mother_id == 1].initial_t.min()
-        part_id  = sel_all[(sel_all.mother_id == 1) & (sel_all.initial_t == min_t1)].particle_id.values
+        gamma_pos1, min_t1 = average_daughter_hits_position(sel_all, hits, 1, gamma_pos1, min_t1)
 
-        sel_hits      = find_hits_of_given_particles(part_id, hits)
-        hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-        gamma_pos1    = np.average(hit_positions, axis=0, weights=sel_hits.energy)
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        min_t2  = sel_all[sel_all.mother_id == 2].initial_t.min()
-        part_id = sel_all[(sel_all.mother_id == 2) & (sel_all.initial_t == min_t2)].particle_id.values
-
-        sel_hits      = find_hits_of_given_particles(part_id, hits)
-        hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-        gamma_pos2    = np.average(hit_positions, axis=0, weights=sel_hits.energy)
+        gamma_pos2, min_t2 = average_daughter_hits_position(sel_all, hits, 2, gamma_pos2, min_t2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
-        g1_min = hits[hits.particle_id == 1].time.min()
-        if min_t1 < 0 or g1_min < min_t1:
-            min_t1    = g1_min
-            g1_hit = hits[(hits.particle_id == 1) & (hits.time == g1_min)]
-            gamma_pos1 = np.array([g1_hit.x.values, g1_hit.y.values, g1_hit.z.values]).transpose()[0]
+        gamma_pos1, min_t1 = average_gamma_hits_position(hits, 1, gamma_pos1, min_t1)
+
     if len(hits[hits.particle_id == 2]) > 0:
-        g2_min = hits[hits.particle_id == 2].time.min()
-        if min_t2 < 0 or g2_min < min_t2:
-            min_t2 = g2_min
-            g2_hit = hits[(hits.particle_id == 2) & (hits.time == g2_min)]
-            gamma_pos2 = np.array([g2_hit.x.values, g2_hit.y.values, g2_hit.z.values]).transpose()[0]
+        gamma_pos2, min_t2 = average_gamma_hits_position(hits, 2, gamma_pos2, min_t2)
 
     if gamma_pos1 is None or gamma_pos2 is None:
         print("Cannot find two true gamma interactions for this event")
@@ -191,6 +203,5 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     else:
         true_pos1 = gamma_pos2
         true_pos2 = gamma_pos1
-
 
     return pos1, pos2, q1, q2, true_pos1, true_pos2
