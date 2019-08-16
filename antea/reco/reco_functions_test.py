@@ -187,3 +187,64 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
             scalar_prod2 = np.array([np.dot(sns_closest_pos[0], p2) for p2 in pos2])
             assert len(q2) == len(pos2)
             assert (scalar_prod2 < 0).all()
+
+
+def test_select_coincidences(ANTEADATADIR):
+    """
+    This test checks that the function select_coincidences returns the position
+    of the true events and the position and charge of the sensors that detected
+    charge only when coincidences are produced.
+    """
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    DataSiPM     = db.DataSiPM('petalo', 0)
+    DataSiPM_idx = DataSiPM.set_index('SensorID')
+    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    threshold    = 2
+    charge_range = (1000, 1400)
+    radius_range = ( 165,  195)
+    sel_df       = rf.find_SiPMs_over_threshold(sns_response, threshold)
+
+    particles = pd.read_hdf(PATH_IN, 'MC/particles')
+    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    events    = particles.event_id.unique()
+
+    for evt in events[:]:
+        evt_parts = particles[particles.event_id == evt]
+        evt_hits  = hits     [hits     .event_id == evt]
+
+        select, true_pos = mcf.select_photoelectric(evt_parts, evt_hits)
+
+        if not select: continue
+        if (len(true_pos) == 1) & (evt_hits.energy.sum() > 0.511): continue
+
+        waveforms = sel_df[sel_df.event_id == evt]
+        if len(waveforms) == 0: continue
+
+        pos1, pos2, q1, q2, true_pos1, true_pos2 = rf.select_coincidences(waveforms, charge_range, DataSiPM_idx, evt_parts, evt_hits)
+
+        if len(true_pos) == 2:
+            scalar_prod1 = np.array([np.dot(true_pos1, p1) for p1 in pos1])
+            scalar_prod2 = np.array([np.dot(true_pos2, p2) for p2 in pos2])
+            assert (scalar_prod1 > 0).all()
+            assert (scalar_prod2 > 0).all()
+
+            dist11 = np.array([np.linalg.norm(true_pos1 - p1) for p1 in pos1])
+            dist21 = np.array([np.linalg.norm(true_pos2 - p1) for p1 in pos1])
+            dist12 = np.array([np.linalg.norm(true_pos1 - p2) for p2 in pos2])
+            dist22 = np.array([np.linalg.norm(true_pos2 - p2) for p2 in pos2])
+            assert ((dist11 - dist21) < 0).all()
+            assert ((dist22 - dist12) < 0).all()
+
+            assert len(pos1) > 0 and len(pos2) > 0
+            assert len(true_pos1) == len(true_pos2)
+            assert len(pos1)      == len(q1)
+            assert len(pos2)      == len(q2)
+
+            true_pos_cyl = rf.from_cartesian_to_cyl(np.array([true_pos1, true_pos2]))
+            true_r       = np.array([i[0] for i in true_pos_cyl])
+            assert (true_r > radius_range[0]).all() and (true_r < radius_range[1]).all()
+
+        else:
+            assert not true_pos1 and not true_pos2
+            assert not len(pos1) and not len(pos2)
+            assert not len(q1)   and not len(q2)
