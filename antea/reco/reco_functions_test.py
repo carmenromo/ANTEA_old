@@ -81,24 +81,29 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
 @given(x, y, z)
 def test_find_closest_sipm(x, y, z):
     """
-    Checks that the function find_closest_sipm returns the position
-    of the closest SiPM to a given point, and the distance between
-    them is a positive quantity.
+    Checks that the function find_closest_sipm returns the position of the
+    closest SiPM to a given point, and the distance between them is a positive
+    quantity.
+    If the point is in the center of the coordinate system or far from the
+    sensors, the function takes more than one sipm because many of them are
+    at the same distance, so a range for the radius is imposed.
     """
+    r = np.sqrt(x**2+y**2)
+    if r < 1 or r > 200: return
+
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     point        = np.array([x, y, z])
     closest_sipm = rf.find_closest_sipm(point, DataSiPM_idx)
+    sns_pos1     = np.array([closest_sipm.X.values, closest_sipm.Y.values, closest_sipm.Z.values]).transpose()
+    dist1        = [np.linalg.norm(np.subtract(point, pos)) for pos in sns_pos1][0]
 
-    sns_positions = np.array([DataSiPM_idx.X.values, DataSiPM_idx.Y.values, DataSiPM_idx.Z.values]).transpose()
-    subtr         = np.subtract(point, sns_positions)
-    distances     = [np.linalg.norm(d) for d in subtr]
-    min_dist      = np.min(distances)
-    min_sipm      = np.isclose(distances, min_dist)
-    closest_sipm2 = DataSiPM_idx[min_sipm]
+    random_sns = DataSiPM_idx.iloc[[np.random.randint(len(DataSiPM))]]
+    sns_pos2   = np.array([random_sns.X.values, random_sns.Y.values, random_sns.Z.values]).transpose()
+    dist2      = np.linalg.norm(np.subtract(point, sns_pos2))
 
-    assert np.all(closest_sipm) == np.all(closest_sipm2)
-    assert min_dist > 0
+    assert dist1 < dist2
+    assert dist1 > 0
 
 
 a = st.floats(min_value=-1000, max_value=1000)
