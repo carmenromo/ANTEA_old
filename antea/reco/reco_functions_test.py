@@ -122,16 +122,13 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
     This test checks that given a point, all the positions of a list of sensor
     positions and charges are divided in two hemispheres.
     The way of testing it is by checking that the scalar product of the position
-    of the sensors in the same hemisphere than the point, is positive.
+    of the sensors in the same hemisphere as the point, is positive.
     Every point in the center of coordinates is neglected in order to avoid
     null scalar prod.
     """
-    if x == 0. and y == 0. and z == 0.:
-        return
-    if a == 0. and b == 0. and c == 0.:
-        return
-    if (np.all(el)==0. for el in l):
-        return
+    if np.isclose(  point.all(), 0.): return
+    if np.isclose(max_pos.all(), 0.): return
+    if (np.all(el)==0. for el in l) : return
 
     point         = np.array([x, y, z])
     max_pos       = np.array([a, b, c])
