@@ -132,6 +132,34 @@ def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float
         return [], -1
 
 
+def assign_sipms_to_gammas_tof(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[float, float, float]], DataSiPM_idx: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
+    """
+    Divide the SiPMs with charge between the two back-to-back gammas,
+    or to one of the two if the other one hasn't interacted.
+    Return the lists of the min time and the positions of the SiPMs of the two groups.
+    """
+    sipms           = DataSiPM_idx.loc[-sns_response.sensor_id]
+    sns_closest_pos = [np.array([find_closest_sipm(pos, sipms).X.values, find_closest_sipm(pos, sipms).Y.values, find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
+
+    pos1, pos2 = [], []
+    t1  , t2   = [], []
+
+    sns_positions  = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
+    sns_first_time = sns_response.time_bin
+    closest_pos    = sns_closest_pos[0] ## Look at the first one, which always exists.
+    for sns_pos, time in zip(sns_positions, sns_first_time):
+        scalar_prod = sum(a*b for a, b in zip(sns_pos, closest_pos))
+        if scalar_prod > 0.:
+            pos1.append(sns_pos)
+            t1  .append(time)
+        elif len(sns_closest_pos) == 2:
+            pos2.append(sns_pos)
+            t2  .append(time)
+
+    return t1, t2, pos1, pos2
+
+
+
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
                         particles: pd.DataFrame, hits: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float],
                                                                              Sequence[Tuple[float, float, float]],
