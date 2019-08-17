@@ -126,12 +126,13 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
     Every point in the center of coordinates is neglected in order to avoid
     null scalar prod.
     """
+    point         = np.array([x, y, z])
+    max_pos       = np.array([a, b, c])
+
     if np.isclose(  point.all(), 0.): return
     if np.isclose(max_pos.all(), 0.): return
     if (np.all(el)==0. for el in l) : return
 
-    point         = np.array([x, y, z])
-    max_pos       = np.array([a, b, c])
     sns_positions = np.array([el[:3] for el in l])
     sns_charges   = np.array([el [3] for el in l])
 
