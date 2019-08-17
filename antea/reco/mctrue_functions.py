@@ -3,7 +3,7 @@ import pandas as pd
 
 from typing     import Sequence, Tuple
 
-from antea.reco import reco_functions   as rf
+from . import reco_functions as rf
 
 
 def find_hits_of_given_particles(p_ids: Sequence[int], hits: pd.DataFrame) -> pd.DataFrame:
