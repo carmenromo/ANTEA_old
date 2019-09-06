@@ -63,7 +63,7 @@ def divide_sipms_in_two_emispheres(sns_positions: Sequence[Tuple[float, float, f
     q1, q2     = [], []
     pos1, pos2 = [], []
     for sns_pos, charge in zip(sns_positions, sns_charges):
-        scalar_prod = sum(a*b for a, b in zip(sns_pos, reference_pos))
+        scalar_prod = sns_pos.dot(reference_pos)
         if scalar_prod > 0.:
             q1.append(charge)
             pos1.append(sns_pos)
@@ -94,7 +94,7 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     ### and those on the opposite side, too, only
     ### if two interactions have been detected.
     for sns_pos, charge in zip(sns_positions, sns_charges):
-        scalar_prod = sum(a*b for a, b in zip(sns_pos, closest_pos))
+        scalar_prod = sns_pos.dot(closest_pos)
         if scalar_prod > 0.:
             q1.append(charge)
             pos1.append(sns_pos)
@@ -184,7 +184,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
         return [], [], [], [], None, None
 
     true_pos1, true_pos2 = [], []
-    scalar_prod = sum(a*b for a, b in zip(gamma_pos1, max_pos))
+    scalar_prod = gamma_pos1.dot(max_pos)
     if scalar_prod > 0:
         true_pos1 = gamma_pos1
         true_pos2 = gamma_pos2
