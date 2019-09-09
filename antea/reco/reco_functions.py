@@ -106,10 +106,9 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
 
 
 def average_daughter_hits_position(particles: pd.DataFrame, hits: pd.DataFrame, mother_id: int,
-                                   gamma_pos: Tuple[float, float, float], min_t: int) -> Tuple[Tuple[float, float, float], int]:
+                                   gamma_pos: Tuple[float, float, float]) -> Tuple[Tuple[float, float, float], int]:
     """
-    Returns the average position and the min time of the hits
-    of the daughters of the primary gammas.
+    Returns the average position and time of the first hit of the daughter of the particle.
     """
     min_t    = particles[ particles.mother_id == mother_id].initial_t.min()
     part_id  = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
@@ -120,10 +119,10 @@ def average_daughter_hits_position(particles: pd.DataFrame, hits: pd.DataFrame, 
     return gamma_pos, min_t
 
 
-def average_gamma_hits_position(hits: pd.DataFrame, part_id: int, gamma_pos: Tuple[float, float, float],
+def average_part_hits_position(hits: pd.DataFrame, part_id: int, gamma_pos: Tuple[float, float, float],
                                 min_t: int) -> Tuple[Tuple[float, float, float], int]:
     """
-    Returns the average position and the min time of the hits of the primary gammas.
+    Returns the average position and time of the first hit of the particle.
     """
     g_min = hits[hits.particle_id == part_id].time.min()
     if min_t < 0 or g_min < min_t:
@@ -179,17 +178,17 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     min_t1 = min_t2 = -1
     gamma_pos1, gamma_pos2 = None, None
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_daughter_hits_position(sel_all, hits, 1, gamma_pos1, min_t1)
+        gamma_pos1, min_t1 = average_daughter_hits_position(sel_all, hits, 1, gamma_pos1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_daughter_hits_position(sel_all, hits, 2, gamma_pos2, min_t2)
+        gamma_pos2, min_t2 = average_daughter_hits_position(sel_all, hits, 2, gamma_pos2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_gamma_hits_position(hits, 1, gamma_pos1, min_t1)
+        gamma_pos1, min_t1 = average_part_hits_position(hits, 1, gamma_pos1, min_t1)
 
     if len(hits[hits.particle_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_gamma_hits_position(hits, 2, gamma_pos2, min_t2)
+        gamma_pos2, min_t2 = average_part_hits_position(hits, 2, gamma_pos2, min_t2)
 
     if gamma_pos1 is None or gamma_pos2 is None:
         print("Cannot find two true gamma interactions for this event")
