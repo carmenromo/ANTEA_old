@@ -8,6 +8,25 @@ from .           import mctrue_functions as mcf
 from .. database import load_db          as db
 
 
+def test_find_hits_of_given_particles(ANTEADATADIR):
+    """
+    This test checks that the sum of the energy of the hits is always lower
+    than the initial kinetic energy of the event.
+    """
+    PATH_IN    = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    particles  = pd.read_hdf(PATH_IN, 'MC/particles')
+    hits       = pd.read_hdf(PATH_IN, 'MC/hits')
+
+    primaries  = particles[particles.primary == True]
+    evt_energy = primaries.groupby(['event_id'])['kin_energy'].sum()
+
+    part_id    = particles.particle_id.values
+    sel_hits   = mcf.find_hits_of_given_particles(part_id, hits)
+    sum_e_hits = sel_hits.groupby(['event_id'])[['energy']].sum()
+    for e_hit, e_evt in zip(sum_e_hits.values, evt_energy.values):
+        assert e_hit <= e_evt
+
+
 def test_select_photoelectric(ANTEADATADIR):
     """
     This test checks that the function select_photoelectric takes the events

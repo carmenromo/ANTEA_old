@@ -5,11 +5,13 @@ from typing     import Sequence, Tuple
 
 from antea.reco import reco_functions   as rf
 
+
 def find_hits_of_given_particles(p_ids: Sequence[int], hits: pd.DataFrame) -> pd.DataFrame:
     """
     Select only the hits belonging to given particles.
     """
     return hits[hits.particle_id.isin(p_ids)]
+
 
 def select_photoelectric(evt_parts: pd.DataFrame, evt_hits: pd.DataFrame) -> Tuple[bool, Sequence[Tuple[float, float, float]]]:
     """
