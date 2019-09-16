@@ -50,7 +50,7 @@ def find_closest_sipm(point: Tuple[float, float, float], sipms: pd.DataFrame) ->
    min_sipm     = np.isclose(distances, min_dist)
    closest_sipm = sipms[min_sipm]
 
-   return closest_sipm
+   return closest_sipm[0]
 
 
 def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
