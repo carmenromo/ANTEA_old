@@ -89,7 +89,7 @@ def test_find_closest_sipm(x, y, z):
     at the same distance, so a range for the radius is imposed.
     """
     r = np.sqrt(x**2+y**2)
-    if r < 1 or r > 200: return
+    if r < 1: return
 
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
