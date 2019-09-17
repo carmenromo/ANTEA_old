@@ -192,6 +192,47 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
             assert (scalar_prod2 < 0).all()
 
 
+part_id = st.integers(min_value=1, max_value=1000)
+
+@given(part_id)
+def test_average_daughters_hits_position(ANTEADATADIR, part_id):
+    """
+    Checks that for the fist particle in time with given mother_id the average
+    hit position and min_time is returned.
+    """
+    PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    particles = pd.read_hdf(PATH_IN, 'MC/particles')
+    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    gamma_pos = None
+    min_t     = -1
+
+    if len(particles[particles.mother_id == part_id]) > 0 and len(hits):
+        gamma_pos, min_t = rf.average_daughters_hits_position(particles, hits, part_id, gamma_pos, min_t)
+        ids = particles[(particles.mother_id == part_id) & (particles.initial_t == min_t)].particle_id.values
+        if len(rf.find_hits_of_given_particles(ids, hits)):
+            assert len(gamma_pos)
+            assert min_t >= 0
+
+
+@given(part_id)
+def test_average_part_hits_position(ANTEADATADIR, part_id):
+    """
+    This test checks that the average position and time of the hits with minimum time of
+    a given particle is returned. In case the new min_t is not lower that the initial one,
+    this last one is returned.
+    """
+    PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    particles = pd.read_hdf(PATH_IN, 'MC/particles')
+    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    gamma_pos = None
+    min_t     = -1
+    if len(hits[hits.particle_id == part_id]) > 0:
+        gamma_pos, min_t = rf.average_part_hits_position(hits, part_id, gamma_pos, min_t)
+        assert len(gamma_pos) and min_t >= 0
+    else:
+        assert gamma_pos == None and min_t < 0
+
+
 def test_select_coincidences(ANTEADATADIR):
     """
     This test checks that the function select_coincidences returns the position

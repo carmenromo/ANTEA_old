@@ -106,7 +106,8 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
 
 
 def average_daughters_hits_position(particles: pd.DataFrame, hits: pd.DataFrame,
-                                   mother_id: int) -> Tuple[Tuple[float, float, float], int]:
+                                    mother_id: int, ave_hit_pos: Tuple[float, float, float],
+                                    min_t: int) -> Tuple[Tuple[float, float, float], int]:
     """
     Returns the average position and time of the hits with minimum time among the
     daughters of a given particle.
@@ -114,8 +115,9 @@ def average_daughters_hits_position(particles: pd.DataFrame, hits: pd.DataFrame,
     min_t       = particles[ particles.mother_id == mother_id].initial_t.min()
     part_id     = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
     sel_hits    = find_hits_of_given_particles(part_id, hits)
-    hit_pos     = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-    ave_hit_pos = np.average(hit_pos, axis=0, weights=sel_hits.energy)
+    if len(sel_hits):
+        hit_pos     = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
+        ave_hit_pos = np.average(hit_pos, axis=0, weights=sel_hits.energy)
     return ave_hit_pos, min_t
 
 
@@ -178,10 +180,10 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     min_t1 = min_t2 = -1
     gamma_pos1, gamma_pos2 = None, None
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_daughters_hits_position(sel_all, hits, 1)
+        gamma_pos1, min_t1 = average_daughters_hits_position(sel_all, hits, 1, gamma_pos1, min_t1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_daughters_hits_position(sel_all, hits, 2)
+        gamma_pos2, min_t2 = average_daughters_hits_position(sel_all, hits, 2, gamma_pos2, min_t2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
