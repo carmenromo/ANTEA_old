@@ -119,18 +119,17 @@ def average_daughters_hits_position(particles: pd.DataFrame, hits: pd.DataFrame,
     return ave_hit_pos, min_t
 
 
-
-def average_part_hits_position(hits: pd.DataFrame, part_id: int, gamma_pos: Tuple[float, float, float],
+def average_part_hits_position(hits: pd.DataFrame, part_id: int, part_pos: Tuple[float, float, float],
                                 min_t: int) -> Tuple[Tuple[float, float, float], int]:
     """
-    Returns the average position and time of the first hit of the particle.
+    Returns the average position and time of the hits with minimum time of a given particle.
     """
-    g_min = hits[hits.particle_id == part_id].time.min()
+    g_min     = hits[hits.particle_id == part_id].time.min()
     if min_t < 0 or g_min < min_t:
-        min_t     = g_min
-        g_hit     = hits[(hits.particle_id == part_id) & (hits.time == g_min)]
-        gamma_pos = np.array([g_hit.x.values, g_hit.y.values, g_hit.z.values]).transpose()[0]
-    return gamma_pos, min_t
+        min_t    = g_min
+        g_hit    = hits[(hits.particle_id == part_id) & (hits.time == g_min)]
+        part_pos = np.array([g_hit.x.values, g_hit.y.values, g_hit.z.values]).transpose()[0]
+    return part_pos, min_t
 
 
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
@@ -179,10 +178,10 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     min_t1 = min_t2 = -1
     gamma_pos1, gamma_pos2 = None, None
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_daughter_hits_position(sel_all, hits, 1, gamma_pos1)
+        gamma_pos1, min_t1 = average_daughters_hits_position(sel_all, hits, 1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_daughter_hits_position(sel_all, hits, 2, gamma_pos2)
+        gamma_pos2, min_t2 = average_daughters_hits_position(sel_all, hits, 2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
