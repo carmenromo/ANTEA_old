@@ -106,18 +106,14 @@ def test_find_closest_sipm(x, y, z):
     assert dist1 > 0
 
 
-a = st.floats(min_value=-1000, max_value=1000)
-b = st.floats(min_value=-1000, max_value=1000)
-c = st.floats(min_value=-1000, max_value=1000)
-
 elements =st.tuples(st.floats  (min_value=-1000, max_value=1000),
                     st.floats  (min_value=-1000, max_value=1000),
                     st.floats  (min_value=-1000, max_value=1000),
                     st.integers(min_value=1,     max_value=10000))
 l = st.lists(elements, min_size=2, max_size=1000)
 
-@given(x, y, z, a, b, c, l)
-def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
+@given(x, y, z, l)
+def test_divide_sipms_in_two_hemispheres(x, y, z, l):
     """
     This test checks that given a point, all the positions of a list of sensor
     positions and charges are divided in two hemispheres according to that point.
@@ -126,11 +122,9 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
     Every point in the center of coordinates is neglected in order to avoid
     null scalar prod.
     """
-    point         = np.array([x, y, z])
-    max_pos       = np.array([a, b, c])
+    point = np.array([x, y, z])
 
     if np.isclose(  point.all(), 0.): return
-    if np.isclose(max_pos.all(), 0.): return
     if (np.all(el)==0. for el in l) : return
 
     sns_positions = np.array([el[:3] for el in l])
@@ -138,8 +132,8 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
 
     pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_positions, sns_charges, point)
 
-    scalar_prod1 = np.array([np.dot(max_pos, p1) for p1 in pos1])
-    scalar_prod2 = np.array([np.dot(max_pos, p2) for p2 in pos2])
+    scalar_prod1 = np.array([np.dot(point, p1) for p1 in pos1])
+    scalar_prod2 = np.array([np.dot(point, p2) for p2 in pos2])
 
     assert len(pos1) == len(q1)
     assert len(pos2) == len(q2)
