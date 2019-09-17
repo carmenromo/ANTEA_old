@@ -105,18 +105,19 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     return pos1, pos2, q1, q2
 
 
-def average_daughter_hits_position(particles: pd.DataFrame, hits: pd.DataFrame, mother_id: int,
-                                   gamma_pos: Tuple[float, float, float]) -> Tuple[Tuple[float, float, float], int]:
+def average_daughters_hits_position(particles: pd.DataFrame, hits: pd.DataFrame,
+                                   mother_id: int) -> Tuple[Tuple[float, float, float], int]:
     """
-    Returns the average position and time of the first hit of the daughter of the particle.
+    Returns the average position and time of the hits with minimum time among the
+    daughters of a given particle.
     """
-    min_t    = particles[ particles.mother_id == mother_id].initial_t.min()
-    part_id  = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
-    sel_hits = find_hits_of_given_particles(part_id, hits)
+    min_t       = particles[ particles.mother_id == mother_id].initial_t.min()
+    part_id     = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
+    sel_hits    = find_hits_of_given_particles(part_id, hits)
+    hit_pos     = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
+    ave_hit_pos = np.average(hit_pos, axis=0, weights=sel_hits.energy)
+    return ave_hit_pos, min_t
 
-    hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-    gamma_pos     = np.average(hit_positions, axis=0, weights=sel_hits.energy)
-    return gamma_pos, min_t
 
 
 def average_part_hits_position(hits: pd.DataFrame, part_id: int, gamma_pos: Tuple[float, float, float],
