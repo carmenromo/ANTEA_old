@@ -141,7 +141,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
                                                                              Tuple[float, float, float],
                                                                              Tuple[float, float, float]]:
     """
-    Find the SiPM with maximum charge. The set of sensors around it are labelled as 1.
+    Finds the SiPM with maximum charge. The set of sensors around it are labelled as 1.
     The sensors on the opposite hemisphere are labelled as 2.
     The true position of the first gamma interaction is also returned for each hemisphere.
     A range of charge is given to select singles in the photoelectric peak.

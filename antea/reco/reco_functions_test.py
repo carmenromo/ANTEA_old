@@ -120,7 +120,7 @@ l = st.lists(elements, min_size=2, max_size=1000)
 def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
     """
     This test checks that given a point, all the positions of a list of sensor
-    positions and charges are divided in two hemispheres.
+    positions and charges are divided in two hemispheres according to that point.
     The way of testing it is by checking that the scalar product of the position
     of the sensors in the same hemisphere as the point, is positive.
     Every point in the center of coordinates is neglected in order to avoid
@@ -148,6 +148,12 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, a, b, c, l):
 
 
 def test_assign_sipms_to_gammas(ANTEADATADIR):
+    """
+    Checks that the function assign_sipms_to_gammas divides the SiPMs with charge
+    between the two back-to-back gammas, or to one of the two if the other one hasn't
+    interacted by calculating the scalar product between the sensors and the closest
+    sensor to the interaction point.
+    """
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
