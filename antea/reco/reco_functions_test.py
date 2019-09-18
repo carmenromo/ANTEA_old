@@ -95,8 +95,8 @@ def test_find_closest_sipm(x, y, z):
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     point        = np.array([x, y, z])
     closest_sipm = rf.find_closest_sipm(point, DataSiPM_idx)
-    sns_pos1     = np.array([closest_sipm.X.values, closest_sipm.Y.values, closest_sipm.Z.values]).transpose()
-    dist1        = [np.linalg.norm(np.subtract(point, pos)) for pos in sns_pos1][0]
+    sns_pos1     = np.array([closest_sipm.X, closest_sipm.Y, closest_sipm.Z])
+    dist1        = np.linalg.norm(np.subtract(point, sns_pos1))
 
     random_sns = DataSiPM_idx.iloc[[np.random.randint(len(DataSiPM))]]
     sns_pos2   = np.array([random_sns.X.values, random_sns.Y.values, random_sns.Z.values]).transpose()
@@ -174,20 +174,19 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
         pos1, pos2, q1, q2 = rf.assign_sipms_to_gammas(waveforms, true_pos, DataSiPM_idx)
 
         sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
-        sns_closest_pos = [np.array([rf.find_closest_sipm(pos, sipms).X.values,
-                                     rf.find_closest_sipm(pos, sipms).Y.values,
-                                     rf.find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
-        scalar_prod1 = np.array([np.dot(sns_closest_pos[0], p1) for p1 in pos1])
+        sns_closest_pos = np.array([rf.find_closest_sipm(true_pos, sipms).X,
+                                    rf.find_closest_sipm(true_pos, sipms).Y,
+                                    rf.find_closest_sipm(true_pos, sipms).Z])
+        scalar_prod1 = np.array([np.dot(sns_closest_pos, p1) for p1 in pos1])
 
         assert len(q1) == len(pos1)
-        assert len(sns_closest_pos) <= 2
         assert (scalar_prod1 > 0).all()
 
         if len(true_pos) < 2:
             assert len(q2)   == 0
             assert len(pos2) == 0
         else:
-            scalar_prod2 = np.array([np.dot(sns_closest_pos[0], p2) for p2 in pos2])
+            scalar_prod2 = np.array([np.dot(sns_closest_pos, p2) for p2 in pos2])
             assert len(q2) == len(pos2)
             assert (scalar_prod2 < 0).all()
 

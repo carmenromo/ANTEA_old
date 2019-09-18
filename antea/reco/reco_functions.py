@@ -44,13 +44,13 @@ def find_closest_sipm(point: Tuple[float, float, float], sipms: pd.DataFrame) ->
    """
    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
 
-   subtr        = np.subtract(point, sns_positions)
+   subtr        = [np.subtract(point, pos) for pos in sns_positions]
    distances    = [np.linalg.norm(d) for d in subtr]
    min_dist     = np.min(distances)
    min_sipm     = np.isclose(distances, min_dist)
    closest_sipm = sipms[min_sipm]
 
-   return closest_sipm[0]
+   return closest_sipm.iloc[0]
 
 
 def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
@@ -82,23 +82,21 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
     sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
-    sns_closest_pos = [np.array([find_closest_sipm(pos, sipms).X.values, find_closest_sipm(pos, sipms).Y.values, find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
+    sns_closest_pos = np.array([find_closest_sipm(true_pos, sipms).X, find_closest_sipm(true_pos, sipms).Y, find_closest_sipm(true_pos, sipms).Z])
 
     q1,   q2   = [], []
     pos1, pos2 = [], []
 
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
-    closest_pos   = sns_closest_pos[0] ## Look at the first one, which always exists.
-    ### The sensors on the same semisphere are grouped together,
-    ### and those on the opposite side, too, only
-    ### if two interactions have been detected.
+    closest_pos   = sns_closest_pos
+
     for sns_pos, charge in zip(sns_positions, sns_charges):
         scalar_prod = sum(a*b for a, b in zip(sns_pos, closest_pos))
         if scalar_prod > 0.:
             q1  .append(charge)
             pos1.append(sns_pos)
-        elif len(sns_closest_pos) == 2:
+        else:
             q2  .append(charge)
             pos2.append(sns_pos)
 
