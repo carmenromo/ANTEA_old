@@ -194,23 +194,25 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
 part_id = st.integers(min_value=1, max_value=1000)
 
 @given(part_id)
-def test_average_daughters_hits_position(ANTEADATADIR, part_id):
+def test_first_hit_among_daughters(ANTEADATADIR, part_id):
     """
-    Checks that for the fist particle in time with given mother_id the average
-    hit position and min_time is returned.
+    This test checks that the function first_hit_among_daughters returns
     """
     PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
     particles = pd.read_hdf(PATH_IN, 'MC/particles')
     hits      = pd.read_hdf(PATH_IN, 'MC/hits')
-    gamma_pos = None
-    min_t     = -1
 
-    if len(particles[particles.mother_id == part_id]) > 0 and len(hits):
-        gamma_pos, min_t = rf.average_daughters_hits_position(particles, hits, part_id, gamma_pos, min_t)
-        ids = particles[(particles.mother_id == part_id) & (particles.initial_t == min_t)].particle_id.values
-        if len(rf.find_hits_of_given_particles(ids, hits)):
-            assert len(gamma_pos)
-            assert min_t >= 0
+    min_ts   = particles[particles.mother_id == part_id].initial_t.sort_values()
+    if len(min_ts) == 0:
+        return
+    min_t = min_ts.iloc[0]
+    p_id     = particles[(particles.mother_id == part_id) & (particles.initial_t == min_t)].particle_id.values
+    sel_hits = mcf.find_hits_of_given_particles(p_id, hits)
+    result   = rf.first_hit_among_daughters(particles, hits, part_id)
+    if len(sel_hits):
+        assert np.isclose(min_t, result[1])
+    else:
+        min_t < result[1]
 
 
 @given(part_id)
