@@ -124,17 +124,18 @@ def first_hit_among_daughters(particles: pd.DataFrame, hits: pd.DataFrame,
         return None, -1
 
 
-def average_part_hits_position(hits: pd.DataFrame, part_id: int, part_pos: Tuple[float, float, float],
-                                min_t: int) -> Tuple[Tuple[float, float, float], int]:
+def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float, float], int]:
     """
-    Returns the average position and time of the hits with minimum time of a given particle.
+    Returns the position and time of the first hit of a given particle.
     """
-    g_min     = hits[hits.particle_id == part_id].time.min()
-    if min_t < 0 or g_min < min_t:
-        min_t    = g_min
-        g_hit    = hits[(hits.particle_id == part_id) & (hits.time == g_min)]
-        part_pos = np.array([g_hit.x.values, g_hit.y.values, g_hit.z.values]).transpose()[0]
-    return part_pos, min_t
+    part_hits = hits[hits.particle_id == part_id]
+    if len(part_hits):
+        t_min    = part_hits.time.min()
+        p_hit    = hits[(hits.particle_id == part_id) & (hits.time == t_min)]
+        part_pos = np.array([p_hit.x.values, p_hit.y.values, p_hit.z.values]).transpose()[0]
+        return part_pos, t_min
+    else:
+        return None, -1
 
 
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
@@ -190,10 +191,16 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_part_hits_position(hits, 1, gamma_pos1, min_t1)
+        g_pos1, g_min_t1 = part_first_hit(hits, 1)
+        if g_min_t1 < min_t1:
+            min_t1     = g_min_t1
+            gamma_pos1 = g_pos1
 
     if len(hits[hits.particle_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_part_hits_position(hits, 2, gamma_pos2, min_t2)
+        g_pos2, g_min_t2 = part_first_hit(hits, 2)
+        if g_min_t2 < min_t2:
+            min_t2     = g_min_t2
+            gamma_pos2 = g_pos2
 
     if gamma_pos1 is None or gamma_pos2 is None:
         print("Cannot find two true gamma interactions for this event")
