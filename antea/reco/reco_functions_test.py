@@ -216,22 +216,20 @@ def test_first_hit_among_daughters(ANTEADATADIR, part_id):
 
 
 @given(part_id)
-def test_average_part_hits_position(ANTEADATADIR, part_id):
+def test_part_first_hit(ANTEADATADIR, part_id):
     """
-    This test checks that the average position and time of the hits with minimum time of
-    a given particle is returned. In case the new min_t is not lower that the initial one,
-    this last one is returned.
+    This test checks that the position and time of the first hit of
+    a given particle is returned.
     """
-    PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
-    particles = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
-    gamma_pos = None
-    min_t     = -1
-    if len(hits[hits.particle_id == part_id]) > 0:
-        gamma_pos, min_t = rf.average_part_hits_position(hits, part_id, gamma_pos, min_t)
-        assert len(gamma_pos) and min_t >= 0
-    else:
-        assert gamma_pos == None and min_t < 0
+    PATH_IN = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    hits    = pd.read_hdf(PATH_IN, 'MC/hits')
+    if len(hits[hits.particle_id == part_id]):
+        t_min1  = hits[ hits.particle_id == part_id].time.sort_values().iloc[0]
+        sel_hit = hits[(hits.particle_id == part_id) & (hits.time == t_min1)]
+        pos1    = np.array([sel_hit.x.values, sel_hit.y.values, sel_hit.z.values]).transpose()[0]
+        result  = rf.part_first_hit(hits, part_id)
+        assert np.isclose(result[1], t_min1)
+        assert [np.isclose(i,j) for i, j in zip(result[0], pos1)]
 
 
 def test_select_coincidences(ANTEADATADIR):
