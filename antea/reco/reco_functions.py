@@ -103,20 +103,25 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     return pos1, pos2, q1, q2
 
 
-def average_daughters_hits_position(particles: pd.DataFrame, hits: pd.DataFrame,
-                                    mother_id: int, ave_hit_pos: Tuple[float, float, float],
-                                    min_t: int) -> Tuple[Tuple[float, float, float], int]:
+def first_hit_among_daughters(particles: pd.DataFrame, hits: pd.DataFrame,
+                              mother_id: int) -> Tuple[float, Tuple[float, float, float]]:
     """
-    Returns the average position and time of the hits with minimum time among the
-    daughters of a given particle.
+    Returns the position and time of the first hit among the daughters of a given particle.
     """
-    min_t       = particles[ particles.mother_id == mother_id].initial_t.min()
-    part_id     = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
-    sel_hits    = find_hits_of_given_particles(part_id, hits)
-    if len(sel_hits):
-        hit_pos     = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-        ave_hit_pos = np.average(hit_pos, axis=0, weights=sel_hits.energy)
-    return ave_hit_pos, min_t
+    min_ts   = particles[particles.mother_id == mother_id].initial_t.sort_values()
+    if len(min_ts):
+        for time in min_ts:
+            min_t    = time
+            part_id  = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
+            sel_hits = find_hits_of_given_particles(part_id, hits)
+            if len(sel_hits):
+                time_first_hit = sel_hits.time.min()
+                sel_hit        = sel_hits[sel_hits.time==time_first_hit]
+                pos_first_hit  = np.array([sel_hit.x.values, sel_hit.y.values, sel_hit.z.values]).transpose()[0]
+                return pos_first_hit, min_t
+            else: continue
+    else:
+        return None, -1
 
 
 def average_part_hits_position(hits: pd.DataFrame, part_id: int, part_pos: Tuple[float, float, float],
@@ -178,10 +183,10 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     min_t1 = min_t2 = -1
     gamma_pos1, gamma_pos2 = None, None
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1 = average_daughters_hits_position(sel_all, hits, 1, gamma_pos1, min_t1)
+        gamma_pos1, min_t1 = first_hit_among_daughters(sel_all, hits, 1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2 = average_daughters_hits_position(sel_all, hits, 2, gamma_pos2, min_t2)
+        gamma_pos2, min_t2 = first_hit_among_daughters(sel_all, hits, 2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
