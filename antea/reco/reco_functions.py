@@ -103,23 +103,17 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     return pos1, pos2, q1, q2
 
 
-def first_hit_among_daughters(particles: pd.DataFrame, hits: pd.DataFrame,
-                              mother_id: int) -> Tuple[float, Tuple[float, float, float]]:
+def initial_coord_first_daughter(particles: pd.DataFrame, mother_id: int) -> Tuple[Tuple[float, float, float], int, str]:
     """
-    Returns the position and time of the first hit among the daughters of a given particle.
+    Returns the position, time and volume of the initial vertex of the first daughter of a given particle.
     """
-    min_ts   = particles[particles.mother_id == mother_id].initial_t.sort_values()
+    min_ts = particles[particles.mother_id == mother_id].initial_t.sort_values()
     if len(min_ts):
-        for time in min_ts:
-            min_t    = time
-            part_id  = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].particle_id.values
-            sel_hits = find_hits_of_given_particles(part_id, hits)
-            if len(sel_hits):
-                time_first_hit = sel_hits.time.min()
-                sel_hit        = sel_hits[sel_hits.time==time_first_hit]
-                pos_first_hit  = np.array([sel_hit.x.values, sel_hit.y.values, sel_hit.z.values]).transpose()[0]
-                return pos_first_hit, min_t
-            else: continue
+        min_t    = min_ts.iloc[0]
+        daughter = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)]
+        vtx_pos  = np.array([daughter.initial_x.values[0], daughter.initial_y.values[0], daughter.initial_z.values[0]])
+        init_vol = daughter.initial_volume.values[0]
+        return vtx_pos, min_t, init_vol
     else:
         return [], -1, None
 
@@ -179,15 +173,17 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     primaries = particles[particles.primary == True]
     sel_all   = sel_vol_name[sel_vol_name.mother_id.isin(primaries.particle_id.values)]
     if len(sel_all) == 0:
-        return [], [], [], [], None, None
-    ### Calculate the minimum time among the daughters of a given primary gamma
-    min_t1 = min_t2 = -1
-    gamma_pos1, gamma_pos2 = None, None
+        return [], [], [], [], [], []
+
+    ### Calculate the initial vertex of the first daughters of a given primary gamma
+    gamma_pos1, gamma_pos2 = [], []
+    vol1      , vol2       = [], []
+    min_t1    , min_t2     = -1, -1
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1 = first_hit_among_daughters(sel_all, hits, 1)
+        gamma_pos1, min_t1, vol1 = initial_coord_first_daughter(sel_all, hits, 1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2 = first_hit_among_daughters(sel_all, hits, 2)
+        gamma_pos2, min_t2, vol2 = initial_coord_first_daughter(sel_all, hits, 2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
