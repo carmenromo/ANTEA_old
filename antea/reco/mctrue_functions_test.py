@@ -1,30 +1,51 @@
 import os
 import math
-import numpy  as np
-import pandas as pd
+import numpy                 as np
+import pandas                as pd
+import hypothesis.strategies as st
 
+from hypothesis  import given
+from collections import OrderedDict
 from .           import reco_functions   as rf
 from .           import mctrue_functions as mcf
 from .. database import load_db          as db
 
 
-def test_find_hits_of_given_particles(ANTEADATADIR):
-    """
-    This test checks that the sum of the energy of the hits is always lower
-    than the initial kinetic energy of the event.
-    """
-    PATH_IN    = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
-    particles  = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits       = pd.read_hdf(PATH_IN, 'MC/hits')
+part_id = st.integers(min_value=1, max_value=1000)
 
-    primaries  = particles[particles.primary == True]
-    evt_energy = primaries.groupby(['event_id'])['kin_energy'].sum()
+@given(part_id)
+def test_find_hits_of_given_particle(ANTEADATADIR, part_id):
+    """
+    This test checks that for one given particle, the function find_hits_of_given_particle
+    returns a dataframe with the corresponding hits of that particle.
+    """
+    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    hits     = pd.read_hdf(PATH_IN, 'MC/hits')
 
-    part_id    = particles.particle_id.values
-    sel_hits   = mcf.find_hits_of_given_particles(part_id, hits)
-    sum_e_hits = sel_hits.groupby(['event_id'])[['energy']].sum()
-    for e_hit, e_evt in zip(sum_e_hits.values, evt_energy.values):
-        assert e_hit <= e_evt
+    sel_hits = mcf.find_hits_of_given_particles([part_id], hits)
+    if len(sel_hits):
+        assert len(sel_hits.particle_id.unique()) == 1
+
+
+l = st.lists(part_id, min_size=2, max_size=1000)
+
+@given(l)
+def test_find_hits_of_given_particles(ANTEADATADIR, l):
+    """
+    This test checks that for some given particles, the function find_hits_of_given_particle
+    returns a dataframe with the corresponding hits of those particles.
+    """
+    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    hits     = pd.read_hdf(PATH_IN, 'MC/hits')
+
+    sel_hits             = mcf.find_hits_of_given_particles(l, hits)
+    non_repeated_part_id = list(OrderedDict.fromkeys(l))
+    parts_without_hits   = 0
+    for part in non_repeated_part_id:
+        if not len(hits[hits.particle_id==part]):
+            parts_without_hits += 1
+    if len(sel_hits):
+                assert len(sel_hits.particle_id.unique()) == len(non_repeated_part_id) - parts_without_hits
 
 
 def test_select_photoelectric(ANTEADATADIR):
