@@ -194,25 +194,23 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
 part_id = st.integers(min_value=1, max_value=1000)
 
 @given(part_id)
-def test_first_hit_among_daughters(ANTEADATADIR, part_id):
+def initial_coord_first_daughter(ANTEADATADIR, part_id):
     """
-    This test checks that the function first_hit_among_daughters returns
+    This test checks that the function initial_coord_first_daughter returns the position,
+    time and volume of the initial vertex of the first daughter of a particle.
     """
     PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
     particles = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    events    = particles.event_id.unique()
 
-    min_ts   = particles[particles.mother_id == part_id].initial_t.sort_values()
-    if len(min_ts) == 0:
-        return
-    min_t = min_ts.iloc[0]
-    p_id     = particles[(particles.mother_id == part_id) & (particles.initial_t == min_t)].particle_id.values
-    sel_hits = mcf.find_hits_of_given_particles(p_id, hits)
-    result   = rf.first_hit_among_daughters(particles, hits, part_id)
-    if len(sel_hits):
-        assert np.isclose(min_t, result[1])
-    else:
-        min_t < result[1]
+    for evt in events:
+        particles_sel  = particles[particles.event_id==evt]
+        pos, tmin, vol = rf.initial_coord_first_daughter(particles_sel, part_id)
+        min_ts         = particles_sel[particles_sel.mother_id == part_id].initial_t.sort_values()
+        vols           = ['ACTIVE', 'CRYOSTAT', 'LAB', 'LXE', 'KAPTON', 'PHANTOM', 'PHOTODIODES', 'SiPMpetFBK', 'WORLD']
+        if len(min_ts) and len(pos):
+            assert (tmin < ts for ts in min_ts[1:])
+            assert vol in vols
 
 
 @given(part_id)
