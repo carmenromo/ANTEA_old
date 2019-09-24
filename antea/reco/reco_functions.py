@@ -121,7 +121,7 @@ def first_hit_among_daughters(particles: pd.DataFrame, hits: pd.DataFrame,
                 return pos_first_hit, min_t
             else: continue
     else:
-        return None, -1
+        return [], -1, None
 
 
 def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float, float], int]:
@@ -135,7 +135,7 @@ def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float
         part_pos = np.array([p_hit.x.values, p_hit.y.values, p_hit.z.values]).transpose()[0]
         return part_pos, t_min
     else:
-        return None, -1
+        return [], -1
 
 
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
@@ -169,7 +169,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     sel1 = (tot_q1 > charge_range[0]) & (tot_q1 < charge_range[1])
     sel2 = (tot_q2 > charge_range[0]) & (tot_q2 < charge_range[1])
     if not sel1 or not sel2:
-        return [], [], [], [], None, None
+        return [], [], [], [], [], []
 
     ### select electrons, primary gammas daughters
     sel_volume   = (particles.initial_volume == 'ACTIVE') & (particles.final_volume == 'ACTIVE')
@@ -202,9 +202,9 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
             min_t2     = g_min_t2
             gamma_pos2 = g_pos2
 
-    if gamma_pos1 is None or gamma_pos2 is None:
+    if not len(gamma_pos1) or not len(gamma_pos2):
         print("Cannot find two true gamma interactions for this event")
-        return [], [], [], [], None, None
+        return [], [], [], [], [], []
 
     true_pos1, true_pos2 = [], []
     scalar_prod = sum(a*b for a, b in zip(gamma_pos1, max_pos))
