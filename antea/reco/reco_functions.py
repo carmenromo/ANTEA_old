@@ -180,10 +180,10 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     vol1      , vol2       = [], []
     min_t1    , min_t2     = -1, -1
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        gamma_pos1, min_t1, vol1 = initial_coord_first_daughter(sel_all, hits, 1)
+        gamma_pos1, min_t1, vol1 = initial_coord_first_daughter(sel_all, 1)
 
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        gamma_pos2, min_t2, vol2 = initial_coord_first_daughter(sel_all, hits, 2)
+        gamma_pos2, min_t2, vol2 = initial_coord_first_daughter(sel_all, 2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
