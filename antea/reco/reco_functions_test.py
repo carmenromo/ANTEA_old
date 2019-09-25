@@ -69,7 +69,7 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
     the threshold plus the number of SiPMs that detected charge
     below the threshold are equal to the total number of sensors.
     """
-    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
     threshold    = 2
     df_over_thr  = rf.find_SiPMs_over_threshold(sns_response, threshold)
@@ -148,7 +148,7 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
     interacted by calculating the scalar product between the sensors and the closest
     sensor to the interaction point.
     """
-    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
@@ -199,7 +199,7 @@ def initial_coord_first_daughter(ANTEADATADIR, part_id):
     This test checks that the function initial_coord_first_daughter returns the position,
     time and volume of the initial vertex of the first daughter of a particle.
     """
-    PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     particles = pd.read_hdf(PATH_IN, 'MC/particles')
     events    = particles.event_id.unique()
 
@@ -219,7 +219,7 @@ def test_part_first_hit(ANTEADATADIR, part_id):
     This test checks that the position and time of the first hit of
     a given particle is returned.
     """
-    PATH_IN = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     hits    = pd.read_hdf(PATH_IN, 'MC/hits')
     if len(hits[hits.particle_id == part_id]):
         t_min1  = hits[ hits.particle_id == part_id].time.sort_values().iloc[0]
@@ -236,7 +236,7 @@ def test_select_coincidences(ANTEADATADIR):
     of the true events and the position and charge of the sensors that detected
     charge only when coincidences are produced.
     """
-    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')

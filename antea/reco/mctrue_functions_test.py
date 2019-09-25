@@ -19,7 +19,7 @@ def test_find_hits_of_given_particle(ANTEADATADIR, part_id):
     This test checks that for one given particle, the function find_hits_of_given_particle
     returns a dataframe with the corresponding hits of that particle.
     """
-    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     hits     = pd.read_hdf(PATH_IN, 'MC/hits')
 
     sel_hits = mcf.find_hits_of_given_particles([part_id], hits)
@@ -35,7 +35,7 @@ def test_find_hits_of_given_particles(ANTEADATADIR, l):
     This test checks that for some given particles, the function find_hits_of_given_particle
     returns a dataframe with the corresponding hits of those particles.
     """
-    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     hits     = pd.read_hdf(PATH_IN, 'MC/hits')
 
     sel_hits             = mcf.find_hits_of_given_particles(l, hits)
@@ -55,7 +55,7 @@ def test_select_photoelectric(ANTEADATADIR):
     effect depositing its 511 keV and stores the weighted average position
     of its/their hits.
     """
-    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_new_tbs.h5')
+    PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
