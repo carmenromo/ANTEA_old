@@ -110,9 +110,9 @@ def initial_coord_first_daughter(particles: pd.DataFrame, mother_id: int) -> Tup
     min_ts = particles[particles.mother_id == mother_id].initial_t.sort_values()
     if len(min_ts):
         min_t    = min_ts.iloc[0]
-        daughter = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)]
-        vtx_pos  = np.array([daughter.initial_x.values[0], daughter.initial_y.values[0], daughter.initial_z.values[0]])
-        init_vol = daughter.initial_volume.values[0]
+        daughter = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].iloc[0]
+        vtx_pos  = np.array([daughter.initial_x, daughter.initial_y, daughter.initial_z])
+        init_vol = daughter.initial_volume
         return vtx_pos, min_t, init_vol
     else:
         return [], -1, None
