@@ -44,31 +44,31 @@ def find_closest_sipm(point: Tuple[float, float, float], sipms: pd.DataFrame) ->
    """
    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
 
-   subtr        = np.subtract(point, sns_positions)
+   subtr        = [np.subtract(point, pos) for pos in sns_positions]
    distances    = [np.linalg.norm(d) for d in subtr]
    min_dist     = np.min(distances)
    min_sipm     = np.isclose(distances, min_dist)
    closest_sipm = sipms[min_sipm]
 
-   return closest_sipm
+   return closest_sipm.iloc[0]
 
 
-def divide_sipms_in_two_emispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
+def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
     """
-    Divide the SiPMs with charge between two emispheres, using a given reference direction (reference_pos) as
+    Divide the SiPMs with charge between two hemispheres, using a given reference direction (reference_pos) as
     a discriminator.
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
 
-    q1, q2     = [], []
+    q1,   q2   = [], []
     pos1, pos2 = [], []
     for sns_pos, charge in zip(sns_positions, sns_charges):
         scalar_prod = sns_pos.dot(reference_pos)
         if scalar_prod > 0.:
-            q1.append(charge)
+            q1  .append(charge)
             pos1.append(sns_pos)
         else:
-            q2.append(charge)
+            q2  .append(charge)
             pos2.append(sns_pos)
 
     return pos1, pos2, np.array(q1), np.array(q2)
@@ -82,39 +82,66 @@ def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
     sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
-    sns_closest_pos = [np.array([find_closest_sipm(pos, sipms).X.values, find_closest_sipm(pos, sipms).Y.values, find_closest_sipm(pos, sipms).Z.values]).transpose()[0] for pos in true_pos]
+    sns_closest_pos = np.array([find_closest_sipm(true_pos, sipms).X, find_closest_sipm(true_pos, sipms).Y, find_closest_sipm(true_pos, sipms).Z])
 
-    q1, q2     = [], []
+    q1,   q2   = [], []
     pos1, pos2 = [], []
 
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
-    closest_pos   = sns_closest_pos[0] ## Look at the first one, which always exists.
-    ### The sensors on the same semisphere are grouped together,
-    ### and those on the opposite side, too, only
-    ### if two interactions have been detected.
+    closest_pos   = sns_closest_pos
+
     for sns_pos, charge in zip(sns_positions, sns_charges):
         scalar_prod = sns_pos.dot(closest_pos)
         if scalar_prod > 0.:
-            q1.append(charge)
+            q1  .append(charge)
             pos1.append(sns_pos)
-        elif len(sns_closest_pos) == 2:
-            q2.append(charge)
+        else:
+            q2  .append(charge)
             pos2.append(sns_pos)
 
-    return q1, q2, pos1, pos2
+    return pos1, pos2, q1, q2
+
+
+def initial_coord_first_daughter(particles: pd.DataFrame, mother_id: int) -> Tuple[Tuple[float, float, float], int, str]:
+    """
+    Returns the position, time and volume of the initial vertex of the first daughter of a given particle.
+    """
+    min_ts = particles[particles.mother_id == mother_id].initial_t.sort_values()
+    if len(min_ts):
+        min_t    = min_ts.iloc[0]
+        daughter = particles[(particles.mother_id == mother_id) & (particles.initial_t == min_t)].iloc[0]
+        vtx_pos  = np.array([daughter.initial_x, daughter.initial_y, daughter.initial_z])
+        init_vol = daughter.initial_volume
+        return vtx_pos, min_t, init_vol
+    else:
+        return [], -1, None
+
+
+def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float, float], int]:
+    """
+    Returns the position and time of the first hit of a given particle.
+    """
+    part_hits = hits[hits.particle_id == part_id]
+    if len(part_hits):
+        t_min    = part_hits.time.min()
+        p_hit    = hits[(hits.particle_id == part_id) & (hits.time == t_min)]
+        part_pos = np.array([p_hit.x.values, p_hit.y.values, p_hit.z.values]).transpose()[0]
+        return part_pos, t_min
+    else:
+        return [], -1
 
 
 def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
-                        particles: pd.DataFrame, hits: pd.DataFrame)-> Tuple[Sequence[float], Sequence[float],
+                        particles: pd.DataFrame, hits: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float],
                                                                              Sequence[Tuple[float, float, float]],
                                                                              Sequence[Tuple[float, float, float]],
                                                                              Tuple[float, float, float],
                                                                              Tuple[float, float, float]]:
     """
-    Find the SiPM with maximum charge. The set of sensors around it are labelled as 1.
-    The sensors on the opposite emisphere are labelled as 2.
-    The true position of the first gamma interaction is also returned for each emisphere.
+    Finds the SiPM with maximum charge. The set of sensors around it are labelled as 1.
+    The sensors on the opposite hemisphere are labelled as 2.
+    The true position of the first gamma interaction is also returned for each hemisphere.
     A range of charge is given to select singles in the photoelectric peak.
     """
     max_sns = sns_response[sns_response.charge == sns_response.charge.max()]
@@ -128,7 +155,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
 
-    pos1, pos2, q1, q2 = divide_sipms_in_two_emispheres(sns_positions, sns_charges, max_pos)
+    pos1, pos2, q1, q2 = divide_sipms_in_two_hemispheres(sns_positions, sns_charges, max_pos)
 
     tot_q1 = sum(q1)
     tot_q2 = sum(q2)
@@ -136,7 +163,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     sel1 = (tot_q1 > charge_range[0]) & (tot_q1 < charge_range[1])
     sel2 = (tot_q2 > charge_range[0]) & (tot_q2 < charge_range[1])
     if not sel1 or not sel2:
-        return [], [], [], [], None, None
+        return [], [], [], [], [], []
 
     ### select electrons, primary gammas daughters
     sel_volume   = (particles.initial_volume == 'ACTIVE') & (particles.final_volume == 'ACTIVE')
@@ -146,42 +173,34 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     primaries = particles[particles.primary == True]
     sel_all   = sel_vol_name[sel_vol_name.mother_id.isin(primaries.particle_id.values)]
     if len(sel_all) == 0:
-        return [], [], [], [], None, None
-    ### Calculate the minimum time among the daughters of a given primary gamma
-    min_t1 = min_t2 = -1
-    gamma_pos1, gamma_pos2 = None, None
+        return [], [], [], [], [], []
+
+    ### Calculate the initial vertex of the first daughters of a given primary gamma
+    gamma_pos1, gamma_pos2 = [], []
+    vol1      , vol2       = [], []
+    min_t1    , min_t2     = -1, -1
     if len(sel_all[sel_all.mother_id == 1]) > 0:
-        min_t1   = sel_all[sel_all.mother_id == 1].initial_t.min()
-        part_id  = sel_all[(sel_all.mother_id == 1) & (sel_all.initial_t == min_t1)].particle_id.values
+        gamma_pos1, min_t1, vol1 = initial_coord_first_daughter(sel_all, 1)
 
-        sel_hits      = find_hits_of_given_particles(part_id, hits)
-        hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-        gamma_pos1    = np.average(hit_positions, axis=0, weights=sel_hits.energy)
     if len(sel_all[sel_all.mother_id == 2]) > 0:
-        min_t2  = sel_all[sel_all.mother_id == 2].initial_t.min()
-        part_id = sel_all[(sel_all.mother_id == 2) & (sel_all.initial_t == min_t2)].particle_id.values
-
-        sel_hits      = find_hits_of_given_particles(part_id, hits)
-        hit_positions = np.array([sel_hits.x.values, sel_hits.y.values, sel_hits.z.values]).transpose()
-        gamma_pos2    = np.average(hit_positions, axis=0, weights=sel_hits.energy)
+        gamma_pos2, min_t2, vol2 = initial_coord_first_daughter(sel_all, 2)
 
     ### Calculate the minimum time among the hits of a given primary gamma
     if len(hits[hits.particle_id == 1]) > 0:
-        g1_min = hits[hits.particle_id == 1].time.min()
-        if min_t1 < 0 or g1_min < min_t1:
-            min_t1    = g1_min
-            g1_hit = hits[(hits.particle_id == 1) & (hits.time == g1_min)]
-            gamma_pos1 = np.array([g1_hit.x.values, g1_hit.y.values, g1_hit.z.values]).transpose()[0]
-    if len(hits[hits.particle_id == 2]) > 0:
-        g2_min = hits[hits.particle_id == 2].time.min()
-        if min_t2 < 0 or g2_min < min_t2:
-            min_t2 = g2_min
-            g2_hit = hits[(hits.particle_id == 2) & (hits.time == g2_min)]
-            gamma_pos2 = np.array([g2_hit.x.values, g2_hit.y.values, g2_hit.z.values]).transpose()[0]
+        g_pos1, g_min_t1 = part_first_hit(hits, 1)
+        if g_min_t1 < min_t1:
+            min_t1     = g_min_t1
+            gamma_pos1 = g_pos1
 
-    if gamma_pos1 is None or gamma_pos2 is None:
+    if len(hits[hits.particle_id == 2]) > 0:
+        g_pos2, g_min_t2 = part_first_hit(hits, 2)
+        if g_min_t2 < min_t2:
+            min_t2     = g_min_t2
+            gamma_pos2 = g_pos2
+
+    if not len(gamma_pos1) or not len(gamma_pos2):
         print("Cannot find two true gamma interactions for this event")
-        return [], [], [], [], None, None
+        return [], [], [], [], [], []
 
     true_pos1, true_pos2 = [], []
     scalar_prod = gamma_pos1.dot(max_pos)
@@ -191,6 +210,5 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     else:
         true_pos1 = gamma_pos2
         true_pos2 = gamma_pos1
-
 
     return pos1, pos2, q1, q2, true_pos1, true_pos2
