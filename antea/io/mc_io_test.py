@@ -11,8 +11,8 @@ from . mc_io import load_mcTOFsns_response
 from . mc_io import mc_writer, mc_sns_response_writer
 
 
-def test_read_sensor_response():
-    test_file = os.environ['ANTEADIR'] + '/testdata/ring_test.h5'
+def test_read_sensor_response(ANTEADATADIR):
+    test_file = os.path.join(ANTEADATADIR,'ring_test.h5')
 
     waveforms = load_mcsns_response(test_file)
 
@@ -27,8 +27,8 @@ def test_read_sensor_response():
     assert sns_charge == charge
 
 
-def test_read_sensor_tof_response():
-    test_file = os.environ['ANTEADIR'] + '/testdata/ring_test.h5'
+def test_read_sensor_tof_response(ANTEADATADIR):
+    test_file = os.path.join(ANTEADATADIR,'ring_test.h5')
 
     waveforms = load_mcTOFsns_response(test_file)
 
@@ -44,8 +44,8 @@ def test_read_sensor_tof_response():
     assert np.allclose(evt_sns_waveforms.charge, charges)
 
 
-def test_write_mc_info(output_tmpdir):
-    test_file_in  = os.environ['ANTEADIR'] + '/testdata/ring_test.h5'
+def test_write_mc_info(ANTEADATADIR, output_tmpdir):
+    test_file_in  = os.path.join(ANTEADATADIR,'ring_test.h5')
     test_file_out = os.path.join(output_tmpdir, 'test_output.h5')
 
     writer = mc_writer(test_file_in, test_file_out)
@@ -71,8 +71,8 @@ def test_write_mc_info(output_tmpdir):
     assert conf_out.equals(conf_in)
 
 
-def test_write_sns_info(output_tmpdir):
-    test_file_in  = os.environ['ANTEADIR'] + '/testdata/ring_test.h5'
+def test_write_sns_info(ANTEADATADIR, output_tmpdir):
+    test_file_in  = os.path.join(ANTEADATADIR,'ring_test.h5')
 
     event_id = 0
     sns_response = {event_id : {1000: 1, 1001: 3}}

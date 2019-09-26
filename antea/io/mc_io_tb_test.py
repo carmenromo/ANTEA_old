@@ -6,8 +6,8 @@ from . mc_io_tb import read_mcsns_response
 from . mc_io_tb import read_mcTOFsns_response
 
 
-def test_read_sensor_response():
-    test_file = os.environ['ANTEADIR'] + '/testdata/ring_test_tb.h5'
+def test_read_sensor_response(ANTEADATADIR):
+    test_file = os.path.join(ANTEADATADIR,'ring_test_tb.h5')
 
     mc_sensor_dict = read_mcsns_response(test_file)
     waveforms = mc_sensor_dict[0]
@@ -19,8 +19,8 @@ def test_read_sensor_response():
     assert waveforms[sensor_id].times == np.array([0.])
     assert waveforms[sensor_id].charges == np.array([8.])
 
-def test_read_sensor_tof_response():
-    test_file = os.environ['ANTEADIR'] + '/testdata/ring_test_tb.h5'
+def test_read_sensor_tof_response(ANTEADATADIR):
+    test_file = os.path.join(ANTEADATADIR,'ring_test_tb.h5')
 
     mc_sensor_dict = read_mcTOFsns_response(test_file)
     waveforms = mc_sensor_dict[0]
@@ -33,8 +33,8 @@ def test_read_sensor_tof_response():
     assert np.allclose(waveforms[-sensor_id].times, times)
     assert np.allclose(waveforms[-sensor_id].charges, charges)
 
-def test_read_last_sensor_response():
-    test_file = os.environ['ANTEADIR'] + '/testdata/ring_test_tb.h5'
+def test_read_last_sensor_response(ANTEADATADIR):
+    test_file = os.path.join(ANTEADATADIR,'ring_test_tb.h5')
 
     mc_sensor_dict = read_mcsns_response(test_file)
     waveforms = mc_sensor_dict[0]
