@@ -161,7 +161,7 @@ def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFr
                                                     Sequence[Tuple[float, float, float]],
                                                     Tuple[float, float, float],
                                                     Tuple[float, float, float],
-                                                    int, int, float, float]:
+                                                    str, str, int, int, float, float]:
     """
     Finds the SiPM with maximum charge. The set of sensors around it are labelled as 1.
     The sensors on the opposite hemisphere are labelled as 2.
@@ -190,7 +190,7 @@ def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFr
     sel1 = (tot_q1 > charge_range[0]) & (tot_q1 < charge_range[1])
     sel2 = (tot_q2 > charge_range[0]) & (tot_q2 < charge_range[1])
     if not sel1 or not sel2:
-        return [], [], [], [], None, None, None, None, None, None
+        return [], [], [], [], None, None, None, None, None, None, None, None
 
     ### select electrons, primary gammas daughters
     sel_volume   = (particles.initial_volume == 'ACTIVE') & (particles.final_volume == 'ACTIVE')
@@ -200,7 +200,7 @@ def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFr
     primaries = particles[particles.primary == True]
     sel_all   = sel_vol_name[sel_vol_name.mother_id.isin(primaries.particle_id.values)]
     if len(sel_all) == 0:
-        return [], [], [], [], None, None, None, None, None, None
+        return [], [], [], [], None, None, None, None, None, None, None, None
 
     ### Calculate the initial vertex of the first daughters of a given primary gamma
     gamma_pos1, gamma_pos2 = [], []
@@ -218,16 +218,18 @@ def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFr
         if g_min_t1 < min_t1:
             min_t1     = g_min_t1
             gamma_pos1 = g_pos1
+            vol1 = 'ACTIVE'
 
     if len(hits[hits.particle_id == 2]) > 0:
         g_pos2, g_min_t2 = part_first_hit(hits, 2)
         if g_min_t2 < min_t2:
             min_t2     = g_min_t2
             gamma_pos2 = g_pos2
+            vol2 = 'ACTIVE'
 
     if not len(gamma_pos1) or not len(gamma_pos2):
         print("Cannot find two true gamma interactions for this event")
-        return [], [], [], [], None, None, None, None, None, None
+        return [], [], [], [], None, None, None, None, None, None, None, None
 
     true_pos1, true_pos2 = [], []
     scalar_prod = gamma_pos1.dot(max_pos)
@@ -242,7 +244,7 @@ def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFr
     min1, min_tof1 = find_first_time_of_sensors(tof_response, sns1)
     min2, min_tof2 = find_first_time_of_sensors(tof_response, sns2)
 
-    return pos1, pos2, q1, q2, true_pos1, true_pos2, min1, min2, min_tof1, min_tof2
+    return pos1, pos2, q1, q2, true_pos1, true_pos2, vol1, vol2, min1, min2, min_tof1, min_tof2
 
 
 def select_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
@@ -254,7 +256,7 @@ def select_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
                                                     Tuple[float, float, float],
                                                     Tuple[float, float, float]]:
 
-    pos1, pos2, q1, q2, true_pos1, true_pos2, _, _, _, _ = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
+    pos1, pos2, q1, q2, true_pos1, true_pos2, _, _, _, _, _, _ = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
 
     return pos1, pos2, q1, q2, true_pos1, true_pos2
 
@@ -264,6 +266,6 @@ def find_first_times_of_coincidences(sns_response: pd.DataFrame, tof_response: p
                                      DataSiPM_idx: pd.DataFrame, particles: pd.DataFrame,
                                      hits: pd.DataFrame)-> Tuple[int, int, float, float]:
 
-    _, _, _, _, _, _, min1, min2, min_t1, min_t2 = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
+    _, _, _, _, _, _, _, _, min1, min2, min_t1, min_t2 = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
 
     return min1, min2, min_t1, min_t2
