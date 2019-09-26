@@ -171,12 +171,12 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
         waveforms = sel_df[sel_df.event_id == evt]
         if len(waveforms) == 0: continue
 
-        pos1, pos2, q1, q2 = rf.assign_sipms_to_gammas(waveforms, true_pos, DataSiPM_idx)
+        _, _, pos1, pos2, q1, q2 = rf.assign_sipms_to_gammas(waveforms, true_pos, DataSiPM_idx)
 
         sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
-        sns_closest_pos = np.array([rf.find_closest_sipm(true_pos, sipms).X,
-                                    rf.find_closest_sipm(true_pos, sipms).Y,
-                                    rf.find_closest_sipm(true_pos, sipms).Z])
+        sns_closest_pos = np.array([rf.find_closest_sipm(true_pos[0], sipms).X,
+                                    rf.find_closest_sipm(true_pos[0], sipms).Y,
+                                    rf.find_closest_sipm(true_pos[0], sipms).Z])
         scalar_prod1 = np.array([np.dot(sns_closest_pos, p1) for p1 in pos1])
 
         assert len(q1) == len(pos1)

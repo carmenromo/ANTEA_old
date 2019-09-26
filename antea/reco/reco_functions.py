@@ -75,32 +75,35 @@ def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, 
 
 
 
-def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[float, float, float]], DataSiPM_idx: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
+def assign_sipms_to_gammas(sns_response: pd.DataFrame, true_pos: Sequence[Tuple[float, float, float]], DataSiPM_idx: pd.DataFrame) -> Tuple[Sequence[int], Sequence[int], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]], Sequence[float], Sequence[float]]:
     """
     Divide the SiPMs with charge between the two back-to-back gammas,
     or to one of the two if the other one hasn't interacted.
     Return the lists of the charges and the positions of the SiPMs of the two groups.
     """
     sipms           = DataSiPM_idx.loc[sns_response.sensor_id]
-    sns_closest_pos = np.array([find_closest_sipm(true_pos, sipms).X, find_closest_sipm(true_pos, sipms).Y, find_closest_sipm(true_pos, sipms).Z])
+    sns_ids         = sipms.index.values
+    sns_closest_pos = np.array([find_closest_sipm(true_pos[0], sipms).X, find_closest_sipm(true_pos[0], sipms).Y, find_closest_sipm(true_pos[0], sipms).Z])
 
     q1,   q2   = [], []
     pos1, pos2 = [], []
+    id1, id2   = [], []
 
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
-    closest_pos   = sns_closest_pos
 
-    for sns_pos, charge in zip(sns_positions, sns_charges):
-        scalar_prod = sns_pos.dot(closest_pos)
+    for sns_id, sns_pos, charge in zip(sns_ids, sns_positions, sns_charges):
+        scalar_prod = sns_pos.dot(sns_closest_pos)
         if scalar_prod > 0.:
             q1  .append(charge)
             pos1.append(sns_pos)
+            id1.append(sns_id)
         else:
             q2  .append(charge)
             pos2.append(sns_pos)
+            id2.append(sns_id)
 
-    return pos1, pos2, q1, q2
+    return id1, id2, pos1, pos2, q1, q2
 
 
 def initial_coord_first_daughter(particles: pd.DataFrame, mother_id: int) -> Tuple[Tuple[float, float, float], int, str]:
