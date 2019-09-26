@@ -19,7 +19,7 @@ allowed_error = st.floats(min_value=1.e-8, max_value=1.e-6)
 def test_lower_or_equal(f1, f2):
    assert rf.lower_or_equal(f2, f1)
 
-   
+
 @given(f, f_lower)
 def test_greater_or_equal(f1, f2):
    assert rf.greater_or_equal(f1, f2)
@@ -106,7 +106,8 @@ def test_find_closest_sipm(x, y, z):
     assert dist1 > 0
 
 
-elements =st.tuples(st.floats  (min_value=-1000, max_value=1000),
+elements =st.tuples(st.integers(min_value=1,     max_value=1000),
+                    st.floats  (min_value=-1000, max_value=1000),
                     st.floats  (min_value=-1000, max_value=1000),
                     st.floats  (min_value=-1000, max_value=1000),
                     st.integers(min_value=1,     max_value=10000))
@@ -127,10 +128,11 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, l):
     if np.isclose(  point.all(), 0.): return
     if (np.all(el)==0. for el in l) : return
 
-    sns_positions = np.array([el[:3] for el in l])
-    sns_charges   = np.array([el [3] for el in l])
+    sns_positions = np.array([el[1:4] for el in l])
+    sns_charges   = np.array([el [4] for el in l])
+    sns_ids       = np.array([el [0] for el in l])
 
-    pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_positions, sns_charges, point)
+    _, _, pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_ids, sns_positions, sns_charges, point)
 
     scalar_prod1 = np.array([np.dot(point, p1) for p1 in pos1])
     scalar_prod2 = np.array([np.dot(point, p2) for p2 in pos2])
@@ -230,9 +232,9 @@ def test_part_first_hit(ANTEADATADIR, part_id):
         assert [np.isclose(i,j) for i, j in zip(result[0], pos1)]
 
 
-def test_select_coincidences(ANTEADATADIR):
+def test_reconstruct_coincidences(ANTEADATADIR):
     """
-    This test checks that the function select_coincidences returns the position
+    This test checks that the function reconstruct_coincidences returns the position
     of the true events and the position and charge of the sensors that detected
     charge only when coincidences are produced.
     """
@@ -240,6 +242,7 @@ def test_select_coincidences(ANTEADATADIR):
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
     sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    tof_response = pd.read_hdf(PATH_IN, 'MC/tof_waveforms')
     threshold    = 2
     charge_range = (1000, 1400)
     radius_range = ( 165,  195)
@@ -258,10 +261,11 @@ def test_select_coincidences(ANTEADATADIR):
         if not select: continue
         if (len(true_pos) == 1) & (evt_hits.energy.sum() > 0.511): continue
 
-        waveforms = sel_df[sel_df.event_id == evt]
-        if len(waveforms) == 0: continue
+        sns = sel_df[sel_df.event_id == evt]
+        if len(sns) == 0: continue
+        tof = tof_response[tof_response.event_id == evt]
 
-        pos1, pos2, q1, q2, true_pos1, true_pos2 = rf.select_coincidences(waveforms, charge_range, DataSiPM_idx, evt_parts, evt_hits)
+        pos1, pos2, q1, q2, true_pos1, true_pos2, _, _, _, _ = rf.reconstruct_coincidences(sns, tof, charge_range, DataSiPM_idx, evt_parts, evt_hits)
 
         if len(true_pos) == 2:
             scalar_prod1 = np.array([np.dot(true_pos1, p1) for p1 in pos1])

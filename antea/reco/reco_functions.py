@@ -53,25 +53,28 @@ def find_closest_sipm(point: Tuple[float, float, float], sipms: pd.DataFrame) ->
    return closest_sipm.iloc[0]
 
 
-def divide_sipms_in_two_hemispheres(sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
+def divide_sipms_in_two_hemispheres(sns_ids: Sequence[int], sns_positions: Sequence[Tuple[float, float, float]], sns_charges: Sequence[float], reference_pos: Tuple[float, float, float]) -> Tuple[Sequence[int], Sequence[int], Sequence[float], Sequence[float], Sequence[Tuple[float, float, float]], Sequence[Tuple[float, float, float]]]:
     """
-    Divide the SiPMs with charge between two hemispheres, using a given reference direction (reference_pos) as
-    a discriminator.
-    Return the lists of the charges and the positions of the SiPMs of the two groups.
+    Divide the SiPMs with charge between two hemispheres, using a given reference direction
+    (reference_pos) as a discriminator.
+    Return the lists of the ids, the charges and the positions of the SiPMs of the two groups.
     """
 
     q1,   q2   = [], []
     pos1, pos2 = [], []
-    for sns_pos, charge in zip(sns_positions, sns_charges):
+    id1, id2   = [], []
+    for sns_id, sns_pos, charge in zip(sns_ids, sns_positions, sns_charges):
         scalar_prod = sns_pos.dot(reference_pos)
         if scalar_prod > 0.:
             q1  .append(charge)
             pos1.append(sns_pos)
+            id1.append(sns_id)
         else:
             q2  .append(charge)
             pos2.append(sns_pos)
+            id2.append(sns_id)
 
-    return pos1, pos2, np.array(q1), np.array(q2)
+    return id1, id2, pos1, pos2, np.array(q1), np.array(q2)
 
 
 
@@ -135,12 +138,30 @@ def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float
         return [], -1
 
 
-def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
-                        particles: pd.DataFrame, hits: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float],
-                                                                             Sequence[Tuple[float, float, float]],
-                                                                             Sequence[Tuple[float, float, float]],
-                                                                             Tuple[float, float, float],
-                                                                             Tuple[float, float, float]]:
+def find_first_time_of_sensors(tof_response: pd.DataFrame, sns_ids: Sequence[int])-> Tuple[int, float]:
+
+    tof = tof_response[tof_response.sensor_id.isin(sns_ids)]
+    min_t  = tof.time_bin.min()
+    min_df = tof[tof.time_bin == min_t]
+
+    if len(min_df)>1:
+        min_id = min_df[min_df.sensor_id == min_df.sensor_id.min()].sensor_id.values[0]
+    else:
+        min_id = min_df.sensor_id.values[0]
+
+    return -min_id, min_t
+
+
+
+def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
+                             charge_range: Tuple[float, float], DataSiPM_idx: pd.DataFrame,
+                             particles: pd.DataFrame,
+                             hits: pd.DataFrame) -> Tuple[Sequence[float], Sequence[float],
+                                                    Sequence[Tuple[float, float, float]],
+                                                    Sequence[Tuple[float, float, float]],
+                                                    Tuple[float, float, float],
+                                                    Tuple[float, float, float],
+                                                    int, int, float, float]:
     """
     Finds the SiPM with maximum charge. The set of sensors around it are labelled as 1.
     The sensors on the opposite hemisphere are labelled as 2.
@@ -155,18 +176,21 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     max_pos  = np.array([max_sipm.X.values, max_sipm.Y.values, max_sipm.Z.values]).transpose()[0]
 
     sipms         = DataSiPM_idx.loc[sns_response.sensor_id]
+    sns_ids       = sipms.index.values
     sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
     sns_charges   = sns_response.charge
 
-    pos1, pos2, q1, q2 = divide_sipms_in_two_hemispheres(sns_positions, sns_charges, max_pos)
+    sns1, sns2, pos1, pos2, q1, q2 = divide_sipms_in_two_hemispheres(sns_ids, sns_positions, sns_charges, max_pos)
 
+    sns1 = -np.array(sns1)
+    sns2 = -np.array(sns2)
     tot_q1 = sum(q1)
     tot_q2 = sum(q2)
 
     sel1 = (tot_q1 > charge_range[0]) & (tot_q1 < charge_range[1])
     sel2 = (tot_q2 > charge_range[0]) & (tot_q2 < charge_range[1])
     if not sel1 or not sel2:
-        return [], [], [], [], [], []
+        return [], [], [], [], None, None, None, None, None, None
 
     ### select electrons, primary gammas daughters
     sel_volume   = (particles.initial_volume == 'ACTIVE') & (particles.final_volume == 'ACTIVE')
@@ -176,7 +200,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
     primaries = particles[particles.primary == True]
     sel_all   = sel_vol_name[sel_vol_name.mother_id.isin(primaries.particle_id.values)]
     if len(sel_all) == 0:
-        return [], [], [], [], [], []
+        return [], [], [], [], None, None, None, None, None, None
 
     ### Calculate the initial vertex of the first daughters of a given primary gamma
     gamma_pos1, gamma_pos2 = [], []
@@ -203,7 +227,7 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
 
     if not len(gamma_pos1) or not len(gamma_pos2):
         print("Cannot find two true gamma interactions for this event")
-        return [], [], [], [], [], []
+        return [], [], [], [], None, None, None, None, None, None
 
     true_pos1, true_pos2 = [], []
     scalar_prod = gamma_pos1.dot(max_pos)
@@ -214,4 +238,32 @@ def select_coincidences(sns_response: pd.DataFrame, charge_range: Tuple[float, f
         true_pos1 = gamma_pos2
         true_pos2 = gamma_pos1
 
+    ### TOF
+    min1, min_tof1 = find_first_time_of_sensors(tof_response, sns1)
+    min2, min_tof2 = find_first_time_of_sensors(tof_response, sns2)
+
+    return pos1, pos2, q1, q2, true_pos1, true_pos2, min1, min2, min_tof1, min_tof2
+
+
+def select_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
+                        charge_range: Tuple[float, float],
+                        DataSiPM_idx: pd.DataFrame, particles: pd.DataFrame,
+                        hits: pd.DataFrame)-> Tuple[Sequence[Tuple[float, float, float]],
+                                                    Sequence[Tuple[float, float, float]],
+                                                    Sequence[float], Sequence[float],
+                                                    Tuple[float, float, float],
+                                                    Tuple[float, float, float]]:
+
+    pos1, pos2, q1, q2, true_pos1, true_pos2, _, _, _, _ = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
+
     return pos1, pos2, q1, q2, true_pos1, true_pos2
+
+
+def find_first_times_of_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
+                                     charge_range: Tuple[float, float],
+                                     DataSiPM_idx: pd.DataFrame, particles: pd.DataFrame,
+                                     hits: pd.DataFrame)-> Tuple[int, int, float, float]:
+
+    _, _, _, _, _, _, min1, min2, min_t1, min_t2 = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
+
+    return min1, min2, min_t1, min_t2
