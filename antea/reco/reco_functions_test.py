@@ -9,6 +9,11 @@ from .           import reco_functions   as rf
 from .           import mctrue_functions as mcf
 from .. database import load_db          as db
 
+from .. io.mc_io import load_mchits
+from .. io.mc_io import load_mcparticles
+from .. io.mc_io import load_mcsns_response
+from .. io.mc_io import load_mcTOFsns_response
+
 
 f             = st.floats(min_value=1,     max_value=2)
 f_lower       = st.floats(min_value=0,     max_value=1)
@@ -70,7 +75,7 @@ def test_find_SiPMs_over_threshold(ANTEADATADIR):
     below the threshold are equal to the total number of sensors.
     """
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
-    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    sns_response = load_mcsns_response(PATH_IN)
     threshold    = 2
     df_over_thr  = rf.find_SiPMs_over_threshold(sns_response, threshold)
     df_below_thr = sns_response.groupby(['event_id','sensor_id'])[['charge']].sum()
@@ -153,12 +158,12 @@ def test_assign_sipms_to_gammas(ANTEADATADIR):
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
-    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    sns_response = load_mcsns_response(PATH_IN)
     threshold    = 2
     sel_df       = rf.find_SiPMs_over_threshold(sns_response, threshold)
 
-    particles = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    particles = load_mcparticles(PATH_IN)
+    hits      = load_mchits(PATH_IN)
     events    = particles.event_id.unique()
 
     for evt in events[:]:
@@ -202,7 +207,7 @@ def initial_coord_first_daughter(ANTEADATADIR, part_id):
     time and volume of the initial vertex of the first daughter of a particle.
     """
     PATH_IN   = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
-    particles = pd.read_hdf(PATH_IN, 'MC/particles')
+    particles = load_mcparticles(PATH_IN)
     events    = particles.event_id.unique()
 
     for evt in events:
@@ -222,7 +227,7 @@ def test_part_first_hit(ANTEADATADIR, part_id):
     a given particle is returned.
     """
     PATH_IN = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
-    hits    = pd.read_hdf(PATH_IN, 'MC/hits')
+    hits    = load_mchits(PATH_IN)
     if len(hits[hits.particle_id == part_id]):
         t_min1  = hits[ hits.particle_id == part_id].time.sort_values().iloc[0]
         sel_hit = hits[(hits.particle_id == part_id) & (hits.time == t_min1)]
@@ -241,15 +246,15 @@ def test_select_coincidences(ANTEADATADIR):
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
-    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
-    tof_response = pd.read_hdf(PATH_IN, 'MC/tof_waveforms')
+    sns_response = load_mcsns_response(PATH_IN)
+    tof_response = load_mcTOFsns_response(PATH_IN)
     threshold    = 2
     charge_range = (1000, 1400)
     radius_range = ( 165,  195)
     sel_df       = rf.find_SiPMs_over_threshold(sns_response, threshold)
 
-    particles = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    particles = load_mcparticles(PATH_IN)
+    hits      = load_mchits(PATH_IN)
     events    = particles.event_id.unique()
 
     for evt in events[:]:

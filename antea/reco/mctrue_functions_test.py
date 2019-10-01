@@ -6,9 +6,16 @@ import hypothesis.strategies as st
 
 from hypothesis  import given
 from collections import OrderedDict
+
 from .           import reco_functions   as rf
 from .           import mctrue_functions as mcf
 from .. database import load_db          as db
+
+from .. io.mc_io import load_mchits
+from .. io.mc_io import load_mcparticles
+from .. io.mc_io import load_mcsns_response
+from .. io.mc_io import load_mcTOFsns_response
+
 
 
 part_id = st.integers(min_value=1, max_value=1000)
@@ -20,7 +27,7 @@ def test_find_hits_of_given_particle(ANTEADATADIR, part_id):
     returns a dataframe with the corresponding hits of that particle.
     """
     PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
-    hits     = pd.read_hdf(PATH_IN, 'MC/hits')
+    hits     = load_mchits(PATH_IN)
 
     sel_hits = mcf.find_hits_of_given_particles([part_id], hits)
     if len(sel_hits):
@@ -36,7 +43,7 @@ def test_find_hits_of_given_particles(ANTEADATADIR, l):
     returns a dataframe with the corresponding hits of those particles.
     """
     PATH_IN  = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
-    hits     = pd.read_hdf(PATH_IN, 'MC/hits')
+    hits     = load_mchits(PATH_IN)
 
     sel_hits             = mcf.find_hits_of_given_particles(l, hits)
     non_repeated_part_id = list(OrderedDict.fromkeys(l))
@@ -58,12 +65,12 @@ def test_select_photoelectric(ANTEADATADIR):
     PATH_IN      = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
     DataSiPM     = db.DataSiPM('petalo', 0)
     DataSiPM_idx = DataSiPM.set_index('SensorID')
-    sns_response = pd.read_hdf(PATH_IN, 'MC/waveforms')
+    sns_response = load_mcsns_response(PATH_IN)
     threshold    = 2
     sel_df       = rf.find_SiPMs_over_threshold(sns_response, threshold)
 
-    particles = pd.read_hdf(PATH_IN, 'MC/particles')
-    hits      = pd.read_hdf(PATH_IN, 'MC/hits')
+    particles = load_mcparticles(PATH_IN)
+    hits      = load_mchits(PATH_IN)
     events    = particles.event_id.unique()
 
     for evt in events[:]:
