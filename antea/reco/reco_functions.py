@@ -139,7 +139,11 @@ def part_first_hit(hits: pd.DataFrame, part_id: int) -> Tuple[Tuple[float, float
 
 
 def find_first_time_of_sensors(tof_response: pd.DataFrame, sns_ids: Sequence[int])-> Tuple[int, float]:
-
+    """
+    This function looks for the time among all sensors for the first photoelectron detected.
+    In case more than one photoelectron arrives at the same time, the sensor with minimum id is chosen.
+    The positive value of the id of the sensor and the time of detection are returned.
+    """
     tof = tof_response[tof_response.sensor_id.isin(sns_ids)]
     min_t  = tof.time_bin.min()
     min_df = tof[tof.time_bin == min_t]
@@ -150,7 +154,6 @@ def find_first_time_of_sensors(tof_response: pd.DataFrame, sns_ids: Sequence[int
         min_id = min_df.sensor_id.values[0]
 
     return -min_id, min_t
-
 
 
 def reconstruct_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,

@@ -44,7 +44,7 @@ def select_photoelectric(evt_parts: pd.DataFrame, evt_hits: pd.DataFrame) -> Tup
         hit_positions = np.array([df.x.values, df.y.values, df.z.values]).transpose()
         true_pos.append(np.average(hit_positions, axis=0, weights=df.energy))
 
-    ### Reject events where the two gammas have interacted in the same emisphere.
+    ### Reject events where the two gammas have interacted in the same hemisphere.
     if (len(true_pos) == 1) & (evt_hits.energy.sum() > 0.511):
        return (False, [])
 
