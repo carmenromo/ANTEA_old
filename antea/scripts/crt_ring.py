@@ -7,6 +7,10 @@ import antea.reco.reco_functions   as rf
 import antea.reco.mctrue_functions as mcf
 
 from antea.utils.table_functions import load_rpos
+from antea.io   .mc_io           import load_mchits
+from antea.io   .mc_io           import load_mcparticles
+from antea.io   .mc_io           import load_mcsns_response
+from antea.io   .mc_io           import load_mcTOFsns_response
 
 ### read sensor positions from database
 DataSiPM     = db.DataSiPM('petalo', 0)
@@ -41,8 +45,8 @@ for ifile in range(start, start+numb):
 
     file_name = file_full.format(ifile)
     try:
-        sns_response     = pd.read_hdf(file_name, 'MC/waveforms')
-        sns_response_tof = pd.read_hdf(file_name, 'MC/tof_waveforms')
+        sns_response     = load_mcsns_response(file_name)
+        sns_response_tof = load_mcTOFsns_response(file_name)
     except ValueError:
         print('File {} not found'.format(file_name))
         continue
@@ -54,8 +58,8 @@ for ifile in range(start, start+numb):
         continue
     print('Analyzing file {0}'.format(file_name))
 
-    particles = pd.read_hdf(file_name, 'MC/particles')
-    hits      = pd.read_hdf(file_name, 'MC/hits')
+    particles = load_mcparticles(file_name)
+    hits      = load_mchits(file_name)
     
     events = particles.event_id.unique()
 
