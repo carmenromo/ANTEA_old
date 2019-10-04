@@ -38,7 +38,6 @@ pos_cart1 = []
 pos_cart2 = []
 event_ids = []
 
-speed_in_vacuum  = 0.299792458 # mm/ps
 ave_speed_in_LXe = 0.210 # mm/ps
 
 for ifile in range(start, start+numb):
@@ -81,53 +80,50 @@ for ifile in range(start, start+numb):
 
         q1, q2, pos1, pos2 = rf.assign_sipms_to_gammas(sns_resp_r, true_pos, DataSiPM_idx)
         r1 = r2 = None
-        if len(pos1) > 0:
+        if len(pos1) > 0 and len(pos2) > 0:
             pos1_phi  = rf.from_cartesian_to_cyl(np.array(pos1))[:,1]
-            diff_sign = min(pos1_phi ) < 0 < max(pos1_phi)
-            if diff_sign & (np.abs(np.min(pos1_phi))>np.pi/2.):
+            diff_sign1 = min(pos1_phi) < 0 < max(pos1_phi)
+            if diff_sign1 & (np.abs(np.min(pos1_phi))>np.pi/2.):
                 pos1_phi[pos1_phi<0] = np.pi + np.pi + pos1_phi[pos1_phi<0]
-            mean_phi = np.average(pos1_phi, weights=q1)
-            var_phi1 = np.average((pos1_phi-mean_phi)**2, weights=q1)
-            r1       = Rpos(np.sqrt(var_phi1)).value
-        if len(pos2) > 0:
+            mean_phi1 = np.average(pos1_phi, weights=q1)
+            var_phi1  = np.average((pos1_phi-mean_phi1)**2, weights=q1)
+            r1        = Rpos(np.sqrt(var_phi1)).value
+
             pos2_phi  = rf.from_cartesian_to_cyl(np.array(pos2))[:,1]
-            diff_sign = min(pos2_phi ) < 0 < max(pos2_phi)
-            if diff_sign & (np.abs(np.min(pos2_phi))>np.pi/2.):
+            diff_sign2 = min(pos2_phi ) < 0 < max(pos2_phi)
+            if diff_sign2 & (np.abs(np.min(pos2_phi))>np.pi/2.):
                 pos2_phi[pos2_phi<0] = np.pi + np.pi + pos2_phi[pos2_phi<0]
-            mean_phi = np.average(pos2_phi, weights=q2)
-            var_phi2 = np.average((pos2_phi-mean_phi)**2, weights=q2)
-            r2       = Rpos(np.sqrt(var_phi2)).value
+            mean_phi2 = np.average(pos2_phi, weights=q2)
+            var_phi2  = np.average((pos2_phi-mean_phi2)**2, weights=q2)
+            r2        = Rpos(np.sqrt(var_phi2)).value
 
 
         q1, q2, pos1, pos2 = rf.assign_sipms_to_gammas(sns_resp_phi, true_pos, DataSiPM_idx)
         phi1 = phi2 = None
-        if len(pos1) > 0:
-            reco_cart_pos = np.average(pos1, weights=q1, axis=0)
-            phi1          = np.arctan2(reco_cart_pos[1], reco_cart_pos[0])
-        if len(pos2) > 0:
-            reco_cart_pos = np.average(pos2, weights=q2, axis=0)
-            phi2          = np.arctan2(reco_cart_pos[1], reco_cart_pos[0])
+        if len(pos1) > 0 and len(pos2) > 0:
+            reco_cart1 = np.average(pos1, weights=q1, axis=0)
+            reco_cart2 = np.average(pos2, weights=q2, axis=0)
+            phi1       = np.arctan2(reco_cart1[1], reco_cart1[0])
+            phi2       = np.arctan2(reco_cart2[1], reco_cart2[0])
 
 
         q1, q2, pos1, pos2 = rf.assign_sipms_to_gammas(sns_resp_z, true_pos, DataSiPM_idx)
         z1 = z2 = None
-        if len(pos1) > 0:
-            reco_cart_pos = np.average(pos1, weights=q1, axis=0)
-            z1            = reco_cart_pos[2]
-        if len(pos2) > 0:
-            reco_cart_pos = np.average(pos2, weights=q2, axis=0)
-            z2            = reco_cart_pos[2]
+        if len(pos1) > 0 and len(pos2) > 0:
+            reco_cart1 = np.average(pos1, weights=q1, axis=0)
+            reco_cart2 = np.average(pos2, weights=q2, axis=0)
+            z1         = reco_cart1[2]
+            z2         = reco_cart2[2]
 
         q1, q2, _, _ = rf.assign_sipms_to_gammas(sns_resp_e, true_pos, DataSiPM_idx)
 
 
         pos1_cart = []
         pos2_cart = []
-        if r1 and phi1 and z1 and q1:
+        if r1 and phi1 and z1 and q1 and r2 and phi2 and z2 and q2:
             pos1_cart.append(r1 * np.cos(phi1))
             pos1_cart.append(r1 * np.sin(phi1))
             pos1_cart.append(z1)
-        if r2 and phi2 and z2 and q2:
             pos2_cart.append(r2 * np.cos(phi2))
             pos2_cart.append(r2 * np.sin(phi2))
             pos2_cart.append(z2)
@@ -140,24 +136,18 @@ for ifile in range(start, start+numb):
         t1, t2, pos1_tof, pos2_tof = rf.assign_sipms_to_gammas_tof(first_timestamp_tof, true_pos, DataSiPM_idx)
 
         min_time_1 = min(t1)
-        min_pos_1  = pos1_tof[t1.index(min_time_1)]
         min_time_2 = min(t2)
+        min_pos_1  = pos1_tof[t1.index(min_time_1)]
         min_pos_2  = pos2_tof[t2.index(min_time_2)]
         min_time   = min_time_1 - min_time_2
 
 
         ### Distance between interaction point and sensor detecting first photon
-        dist1 = np.linalg.norm(a_cart1 - min_time_1)
-        dist2 = np.linalg.norm(a_cart2 - min_time_2)
+        dist1 = np.linalg.norm(a_cart1 - min_pos_1)
+        dist2 = np.linalg.norm(a_cart2 - min_pos_2)
         dist  = dist1 - dist2
 
-
-        ### Distance of the interaction point from the centre of the system
-        inter1 = np.linalg.norm(a_cart1)
-        inter2 = np.linalg.norm(a_cart2)
-        inter  = inter1 - inter2
-
-        delta_t = 1/2 *(min_time - inter/speed_in_vacuum - dist/ave_speed_in_LXe)
+        delta_t = 1/2 *(dist/ave_speed_in_LXe - min_time)
 
         time_diff.append(delta_t)
         pos_cart1.append(a_cart1)
