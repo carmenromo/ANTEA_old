@@ -255,8 +255,7 @@ def test_find_first_time_of_sensors(ANTEADATADIR):
 
         assert result[0] in ids
         assert result[0] > 0
-        for t in times:
-            assert result[1] <= t
+        assert [rf.lower_or_equal(t, result[1]) for t in times]
 
 
 def test_select_coincidences(ANTEADATADIR):
