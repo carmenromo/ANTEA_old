@@ -249,14 +249,14 @@ def test_find_first_time_of_sensors(ANTEADATADIR):
     for evt in events[:]:
         tof     = tof_response[tof_response.event_id==evt]
         sns_ids = tof.sensor_id.unique()
-        min_t   = tof.time_bin.sort_values().iloc[0]
-        ids     = -tof[tof.time_bin==min_t].sensor_id.values
+        times   = tof.time_bin
+        ids     = -tof[tof.time_bin==times.sort_values().iloc[0]].sensor_id.values
         result  = rf.find_first_time_of_sensors(tof, sns_ids)
 
         assert result[0] in ids
         assert result[0] > 0
-        assert result[1] == min_t
-
+        for t in times:
+            assert result[1] <= t
 
 
 def test_select_coincidences(ANTEADATADIR):
