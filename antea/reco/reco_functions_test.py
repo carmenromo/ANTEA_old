@@ -243,7 +243,7 @@ def test_find_first_time_of_sensors(ANTEADATADIR):
     the time of the first photoelectron detected among all sensors per event.
     The sensor id must be positive.
     """
-    PATH_IN = os.path.join(ANTEADATADIR, 'ring_test_1000ev.h5')
+    PATH_IN = os.path.join(ANTEADATADIR, 'ring_test.h5')
     tof_response = load_mcTOFsns_response(PATH_IN)
     events       = tof_response.event_id.unique()
     for evt in events[:]:
