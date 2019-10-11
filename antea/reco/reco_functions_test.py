@@ -134,8 +134,8 @@ def test_divide_sipms_in_two_hemispheres(x, y, z, l):
     if (np.all(el)==0. for el in l) : return
 
     sns_positions = np.array([el[1:4] for el in l])
-    sns_charges   = np.array([el [4] for el in l])
-    sns_ids       = np.array([el [0] for el in l])
+    sns_charges   = np.array([el [4]  for el in l])
+    sns_ids       = np.array([el [0]  for el in l])
 
     _, _, pos1, pos2, q1, q2 = rf.divide_sipms_in_two_hemispheres(sns_ids, sns_positions, sns_charges, point)
 
@@ -216,8 +216,9 @@ def initial_coord_first_daughter(ANTEADATADIR, part_id):
         min_ts         = particles_sel[particles_sel.mother_id == part_id].initial_t.sort_values()
         vols           = ['ACTIVE', 'CRYOSTAT', 'LAB', 'LXE', 'KAPTON', 'PHANTOM', 'PHOTODIODES', 'SiPMpetFBK', 'WORLD']
         if len(min_ts) and len(pos):
-            assert (tmin < ts for ts in min_ts[1:])
             assert vol in vols
+            for ts in min_ts[1:]:
+                assert tmin < ts
 
 
 @given(part_id)
@@ -234,7 +235,8 @@ def test_part_first_hit(ANTEADATADIR, part_id):
         pos1    = np.array([sel_hit.x.values, sel_hit.y.values, sel_hit.z.values]).transpose()[0]
         result  = rf.part_first_hit(hits, part_id)
         assert np.isclose(result[1], t_min1)
-        assert [np.isclose(i,j) for i, j in zip(result[0], pos1)]
+        for i, j in zip(result[0], pos1):
+            assert np.isclose(i,j)
 
 
 def test_find_first_time_of_sensors(ANTEADATADIR):
@@ -255,7 +257,8 @@ def test_find_first_time_of_sensors(ANTEADATADIR):
 
         assert result[0] in ids
         assert result[0] > 0
-        assert [rf.lower_or_equal(t, result[1]) for t in times]
+        for t in times:
+            assert rf.lower_or_equal(result[1], t)
 
 
 def test_select_coincidences(ANTEADATADIR):
