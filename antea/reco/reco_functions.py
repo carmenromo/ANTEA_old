@@ -392,3 +392,17 @@ def find_first_times_of_coincidences(sns_response: pd.DataFrame,
     _, _, _, _, _, _, _, _, min1, min2, min_t1, min_t2 = reconstruct_coincidences(sns_response, tof_response, charge_range, DataSiPM_idx, particles, hits)
 
     return min1, min2, min_t1, min_t2
+
+
+def find_selected_times_of_sensors(evt_sns, evt_tof, sns_ids, num_sel_sns, DataSiPM_idx):
+    tof              = evt_tof[evt_tof.sensor_id.isin(sns_ids)]
+    min_ts           = tof.groupby(['sensor_id'])[['time_bin']].min().sort_values('time_bin')
+    mean_t_sel_sns   = min_ts[:num_sel_sns].time_bin.mean()
+    ids_sel_sns      = min_ts[:num_sel_sns].index.values
+    evt_sns_sel_sns  = evt_sns[evt_sns.sensor_id.isin(-ids_sel_sns)]
+    charges_sel_sns  = evt_sns_sel_sns.groupby(['sensor_id'])[['charge']].sum().values.T[0]
+    sipms            = DataSiPM_idx.loc[evt_sns_sel_sns.sensor_id]
+    sns_positions    = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).T
+    weig_pos_sel_sns = np.average(                sns_positions, axis=0, weights=charges_sel_sns)
+    weig_t_sel_sns   = np.average(min_ts[:num_sel_sns].time_bin, axis=0, weights=charges_sel_sns)
+    return ids_sel_sns, charges_sel_sns, mean_t_sel_sns, weig_t_sel_sns, weig_pos_sel_sns
