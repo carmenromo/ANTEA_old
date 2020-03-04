@@ -359,6 +359,103 @@ def reconstruct_coincidences(sns_response: pd.DataFrame,
     return int_pos1, int_pos2, int_q1, int_q2, true_pos1, true_pos2, true_t1, true_t2, int_min1, int_min2, int_tof1, int_tof2
 
 
+def reconstruct_coincidences2(sns_response: pd.DataFrame,
+                              tof_response: pd.DataFrame,
+                              charge_range: Tuple[float, float],
+                              DataSiPM_idx: pd.DataFrame,
+                              particles: pd.DataFrame,
+                              hits: pd.DataFrame,
+                              num_of_init_pes: Sequence[float]) -> Tuple[Sequence[Tuple[float, float, float]],
+                                                                         Sequence[Tuple[float, float, float]],
+                                                                         Sequence[float], Sequence[float],
+                                                                         Tuple[float, float, float],
+                                                                         Tuple[float, float, float],
+                                                                         float, float, int, int, int, int]:
+    if 'SensorID' in DataSiPM_idx.columns:
+        DataSiPM_idx = DataSiPM_idx.set_index('SensorID')
+
+    max_sns = sns_response[sns_response.charge == sns_response.charge.max()]
+    ## If by chance two sensors have the maximum charge, choose one (arbitrarily)
+    if len(max_sns != 1):
+        max_sns = max_sns[max_sns.sensor_id == max_sns.sensor_id.min()]
+    max_sipm = DataSiPM_idx.loc[max_sns.sensor_id]
+    max_pos  = np.array([max_sipm.X.values, max_sipm.Y.values, max_sipm.Z.values]).transpose()[0]
+
+    sipms         = DataSiPM_idx.loc[sns_response.sensor_id]
+    sns_ids       = sipms.index.values
+    sns_positions = np.array([sipms.X.values, sipms.Y.values, sipms.Z.values]).transpose()
+    sns_charges   = sns_response.charge
+
+    sns1, sns2, pos1, pos2, q1, q2 = divide_sipms_in_two_hemispheres(sns_ids, sns_positions, sns_charges, max_pos)
+
+    tot_q1 = sum(q1)
+    tot_q2 = sum(q2)
+
+    sel1 = (tot_q1 > charge_range[0]) & (tot_q1 < charge_range[1])
+    sel2 = (tot_q2 > charge_range[0]) & (tot_q2 < charge_range[1])
+    if not sel1 or not sel2:
+        return [], [], [], [], None, None, None, None, [], [], None, None, None, None, [], []
+
+    ### TOF
+    sns1 = -np.array(sns1)
+    sns2 = -np.array(sns2)
+    #min1, min_tof1 = find_first_time_of_sensors(tof_response, sns1)
+    #min2, min_tof2 = find_first_time_of_sensors(tof_response, sns2)
+
+    ids_tof_tot1 , ids_tof_tot2  = [], []
+    mean_tof_tot1, mean_tof_tot2 = [], []
+    weig_tof_tot1, weig_tof_tot2 = [], []
+    weig_pos_tot1, weig_pos_tot2 = [], []
+    for num in num_of_init_pes:
+        ids_sel_sns1, _, mean_tof1, weig_tof1, weig_pos1 = find_selected_times_of_sensors(sns_response, tof_response, sns1, num, DataSiPM_idx)
+        ids_sel_sns2, _, mean_tof2, weig_tof2, weig_pos2 = find_selected_times_of_sensors(sns_response, tof_response, sns2, num, DataSiPM_idx)
+        ids_tof_tot1 .append(ids_sel_sns1)
+        ids_tof_tot2 .append(ids_sel_sns2)
+        mean_tof_tot1.append(mean_tof1)
+        mean_tof_tot2.append(mean_tof2)
+        weig_tof_tot1.append(weig_tof1)
+        weig_tof_tot2.append(weig_tof2)
+        weig_pos_tot1.append(weig_pos1)
+        weig_pos_tot2.append(weig_pos2)
+
+
+    true_pos1, true_pos2, true_t1, true_t2, _, _ = find_first_interactions_in_active(particles, hits)
+
+    if not len(true_pos1) or not len(true_pos2):
+        print("Cannot find two true gamma interactions for this event")
+        return [], [], [], [], None, None, None, None, [], [], None, None, None, None, [], []
+
+    scalar_prod = true_pos1.dot(max_pos)
+    if scalar_prod > 0:
+        int_pos1 = pos1
+        int_pos2 = pos2
+        int_q1   = q1
+        int_q2   = q2
+        int_min1 = ids_tof_tot1
+        int_min2 = ids_tof_tot2
+        int_mean_tof1 = mean_tof_tot1
+        int_mean_tof2 = mean_tof_tot2
+        int_weig_tof1 = weig_tof_tot1
+        int_weig_tof2 = weig_tof_tot2
+        weig_pos1     = weig_pos_tot1
+        weig_pos2     = weig_pos_tot2
+    else:
+        int_pos1 = pos2
+        int_pos2 = pos1
+        int_q1   = q2
+        int_q2   = q1
+        int_min1 = ids_tof_tot2
+        int_min2 = ids_tof_tot1
+        int_mean_tof1 = mean_tof_tot2
+        int_mean_tof2 = mean_tof_tot1
+        int_weig_tof1 = weig_tof_tot2
+        int_weig_tof2 = weig_tof_tot1
+        weig_pos1     = weig_pos_tot2
+        weig_pos2     = weig_pos_tot1
+
+    return int_pos1, int_pos2, int_q1, int_q2, true_pos1, true_pos2, true_t1, true_t2, int_min1, int_min2, int_mean_tof1, int_mean_tof2, int_weig_tof1, int_weig_tof2, weig_pos1, weig_pos2
+
+
 def select_coincidences(sns_response: pd.DataFrame, tof_response: pd.DataFrame,
                         charge_range: Tuple[float, float],
                         DataSiPM_idx: pd.DataFrame, particles: pd.DataFrame,
