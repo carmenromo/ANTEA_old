@@ -18,7 +18,7 @@ def simulate_reco_event(evt_id: int, hits: pd.DataFrame, particles: pd.DataFrame
                         errmat_p_r: errmat, errmat_p_phi: errmat3d, errmat_p_z: errmat3d,
                         errmat_p_t: errmat, errmat_c_r: errmat, errmat_c_phi: errmat3d,
                         errmat_c_z: errmat3d, errmat_c_t: errmat,
-                        true_e_threshold: float = 0.) -> pd.DataFrame:
+                        true_e_threshold: float = 0., photo_range: float = 1.) -> pd.DataFrame:
     """
     Simulate the reconstructed coordinates for 1 coincidence from true GEANT4 dataframes.
     """
@@ -50,7 +50,7 @@ def simulate_reco_event(evt_id: int, hits: pd.DataFrame, particles: pd.DataFrame
                                })
         return events
 
-    pos1, pos2, t1, t2, phot1, phot2 = rf.find_first_interactions_in_active(evt_parts, evt_hits)
+    pos1, pos2, t1, t2, phot1, phot2 = rf.find_first_interactions_in_active(evt_parts, evt_hits, photo_range)
 
     if len(pos1) == 0 or len(pos2) == 0:
         events = pd.DataFrame({'event_id':  [float(evt_id)],
