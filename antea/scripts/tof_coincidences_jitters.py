@@ -160,6 +160,22 @@ for ifile in range(start, start+numb):
             c1 += 1
             continue
 
+        pos1_phi = rf.from_cartesian_to_cyl(np.array(pos1r))[:,1]
+        diff_sign = min(pos1_phi ) < 0 < max(pos1_phi)
+        if diff_sign & (np.abs(np.min(pos1_phi))>np.pi/2.):
+            pos1_phi[pos1_phi<0] = np.pi + np.pi + pos1_phi[pos1_phi<0]
+        mean_phi = np.average(pos1_phi, weights=q1r)
+        var_phi1 = np.average((pos1_phi-mean_phi)**2, weights=q1r)
+        r1  = Rpos(np.sqrt(var_phi1)).value
+
+        pos2_phi = rf.from_cartesian_to_cyl(np.array(pos2r))[:,1]
+        diff_sign = min(pos2_phi ) < 0 < max(pos2_phi)
+        if diff_sign & (np.abs(np.min(pos2_phi))>np.pi/2.):
+            pos2_phi[pos2_phi<0] = np.pi + np.pi + pos2_phi[pos2_phi<0]
+        mean_phi = np.average(pos2_phi, weights=q2r)
+        var_phi2 = np.average((pos2_phi-mean_phi)**2, weights=q2r)
+        r2  = Rpos(np.sqrt(var_phi2)).value
+
         sel1_phi = q1>thr_phi
         q1phi    = q1[sel1_phi]
         pos1phi  = pos1[sel1_phi]
@@ -170,6 +186,12 @@ for ifile in range(start, start+numb):
             c2 += 1
             continue
 
+        phi1 = phi2 = None
+        reco_cart_pos = np.average(pos1phi, weights=q1phi, axis=0)
+        phi1 = np.arctan2(reco_cart_pos[1], reco_cart_pos[0])
+        reco_cart_pos = np.average(pos2phi, weights=q2phi, axis=0)
+        phi2 = np.arctan2(reco_cart_pos[1], reco_cart_pos[0])
+
         sel1_z = q1>thr_z
         q1z    = q1[sel1_z]
         pos1z  = pos1[sel1_z]
@@ -179,6 +201,12 @@ for ifile in range(start, start+numb):
         if len(q1z) == 0 or len(q2z) == 0:
             c3 += 1
             continue
+
+        z1 = z2 = None
+        reco_cart_pos = np.average(pos1z, weights=q1z, axis=0)
+        z1 = reco_cart_pos[2]
+        reco_cart_pos = np.average(pos2z, weights=q2z, axis=0)
+        z2 = reco_cart_pos[2]
 
         sel1_e = q1>thr_e
         q1e    = q1[sel1_e]
@@ -242,6 +270,13 @@ for ifile in range(start, start+numb):
         true_time2.append(true_t2/units.ps)
         max_hit_distance2.append(max_dist2)
 
+        reco_r1.append(r1)
+        reco_phi1.append(phi1)
+        reco_z1.append(z1)
+        reco_r2.append(r2)
+        reco_phi2.append(phi2)
+        reco_z2.append(z2)
+
 
 a_first_sipm1_1 = np.array(first_sipm1)
 a_first_time1_1 = np.array(first_time1)
@@ -252,14 +287,23 @@ a_first_time2_1 = np.array(first_time2)
 a_true_time2  = np.array(true_time2)
 a_max_hit_distance2 = np.array(max_hit_distance2)
 
+a_reco_r1   = np.array(reco_r1)
+a_reco_phi1 = np.array(reco_phi1)
+a_reco_z1   = np.array(reco_z1)
+a_reco_r2   = np.array(reco_r2)
+a_reco_phi2 = np.array(reco_phi2)
+a_reco_z2   = np.array(reco_z2)
+
 a_event_ids = np.array(event_ids)
 
 np.savez(evt_file,
-         a_first_sipm1_1=a_first_sipm1_1, a_first_time1_1=a_first_time1_1,
-         a_first_sipm2_1=a_first_sipm2_1, a_first_time2_1=a_first_time2_1,
-         a_true_time1=a_true_time1, a_true_time2=a_true_time2,
-         a_max_hit_distance1=a_max_hit_distance1, a_max_hit_distance2=a_max_hit_distance2,
-         a_event_ids=a_event_ids)
+        a_reco_r1=a_reco_r1, a_reco_phi1=a_reco_phi1, a_reco_z1=a_reco_z1,
+        a_reco_r2=a_reco_r2, a_reco_phi2=a_reco_phi2, a_reco_z2=a_reco_z2,
+        a_first_sipm1_1=a_first_sipm1_1, a_first_time1_1=a_first_time1_1,
+        a_first_sipm2_1=a_first_sipm2_1, a_first_time2_1=a_first_time2_1,
+        a_true_time1=a_true_time1, a_true_time2=a_true_time2,
+        a_max_hit_distance1=a_max_hit_distance1, a_max_hit_distance2=a_max_hit_distance2,
+        a_event_ids=a_event_ids)
 
 print('Not passing charge threshold = {}'.format(boh0))
 print('Not passing tof charge threshold = {}'.format(boh1))

@@ -195,7 +195,7 @@ def find_first_time_of_sensors(tof_response: pd.DataFrame,
     if tof.empty:
         raise WaveformEmptyTable("Tof dataframe is empty")
 
-    tof['jit_time'] = np.random.normal(tof.time.values, sigma_elec)
+    tof['jit_time'] = np.random.normal(tof.time.values, sigma)
 
     first_times = tof.sort_values(by=['jit_time']).iloc[0:n_pe]
     min_t       = first_times['jit_time'].mean()
@@ -362,7 +362,7 @@ def find_coincidence_timestamps(tof_response: pd.DataFrame,
     Finds the first time and sensor of each one of two sets of sensors,
     given a sensor response dataframe.
     """
-    min1, time1 = find_first_time_of_sensors(tof_response, -sns1, sigma, npe)
-    min2, time2 = find_first_time_of_sensors(tof_response, -sns2, sigma, npe)
+    min1, q1, time1 = find_first_time_of_sensors(tof_response, -sns1, sigma, npe)
+    min2, q2, time2 = find_first_time_of_sensors(tof_response, -sns2, sigma, npe)
 
     return min1, min2, q1, q2, time1, time2
