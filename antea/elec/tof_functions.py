@@ -58,8 +58,8 @@ def tdc_convolution(tof_response: pd.DataFrame,
     """
     pe_vect = np.zeros(time_window)
     sel_tof = tof_response[(tof_response.sensor_id == s_id) &
-                           (tof_response.time_bin < time_window)]
-    pe_vect[sel_tof.time_bin.values] = sel_tof.charge.values
+                           (tof_response.time < time_window)]
+    pe_vect[sel_tof.time.values] = sel_tof.charge.values
     tdc_conv = convolve_tof(spe_response, pe_vect)
     return tdc_conv
 
@@ -70,7 +70,7 @@ def translate_charge_conv_to_wf_df(event_id: int,
     """
     Translates a given numpy array into a tof type dataframe.
     """
-    keys        = np.array(['event_id', 'sensor_id', 'time_bin', 'charge'])
+    keys        = np.array(['event_id', 'sensor_id', 'time', 'charge'])
     t_bin       = np.where(conv_vect>0)[0]
     charge      = conv_vect[conv_vect>0]
     evt         = np.full(len(t_bin), event_id)
@@ -78,5 +78,5 @@ def translate_charge_conv_to_wf_df(event_id: int,
     a_wf        = np.array([evt, sns_id_full, t_bin, charge])
     wf_df       = pd.DataFrame(a_wf.T, columns=keys).astype({'event_id': 'int32',
                                                             'sensor_id': 'int32',
-                                                            'time_bin' : 'int32'})
+                                                            'time' : 'int32'})
     return wf_df
