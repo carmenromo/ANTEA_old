@@ -195,7 +195,7 @@ def find_first_time_of_sensors(tof_response: pd.DataFrame,
     if tof.empty:
         raise WaveformEmptyTable("Tof dataframe is empty")
 
-    tof['jit_time'] = np.random.normal(tof.time.values, sigma)
+    tof.insert(4, 'jit_time', np.random.normal(tof.time.values, sigma))
 
     first_times = tof.sort_values(by=['jit_time']).iloc[0:n_pe]
     min_t       = first_times['jit_time'].mean()
