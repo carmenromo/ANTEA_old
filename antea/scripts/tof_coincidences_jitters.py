@@ -41,12 +41,12 @@ sigma_sipm = 80 #ps
 sigma_elec = 30 #ps
 n_pe = 10
 
-#file_full = '/home/paolafer/sim/full_body_sipm_refl/full_body_sipm_refl.{0}.pet.h5'
-#evt_file  = '/home/paolafer/analysis/full_body_sipm_refl/full_body_sipm_refl_ave_coincidences_{0}_{1}_{2}_{3}_{4}_{5}'.format(start, numb,  int(thr_r), int(thr_phi), int(thr_z), int(thr_e))
-#rpos_file = '/home/paolafer/analysis/tables/r_table_full_body_phantom_paper_thr{0}pes.h5'.format(int(thr_r))
-file_full = '/Users/paola/PETALO/sim/full_body/full_body_sipm_refl.{0}.pet.h5'
-evt_file  = '/Users/paola/PETALO/analysis/prova_{0}_{1}_{2}_{3}_{4}_{5}.h5'.format(start, numb,  int(thr_r), int(thr_phi), int(thr_z), int(thr_e))
-rpos_file ='/Users/paola/PETALO/analysis/tables/r_table_full_body_phantom_paper_thr{0}pes.h5'.format(int(thr_r))
+file_full = '/home/paolafer/sim/full_body_sipm_refl/full_body_sipm_refl.{0}.pet.h5'
+evt_file  = '/home/paolafer/analysis/full_body_sipm_refl/full_body_sipm_refl_ave_coincidences_{0}_{1}_{2}_{3}_{4}_{5}'.format(start, numb,  int(thr_r), int(thr_phi), int(thr_z), int(thr_e))
+rpos_file = '/home/paolafer/analysis/tables/r_table_full_body_phantom_paper_thr{0}pes.h5'.format(int(thr_r))
+#file_full = '/Users/paola/PETALO/sim/full_body/full_body_sipm_refl.{0}.pet.h5'
+#evt_file  = '/Users/paola/PETALO/analysis/prova_{0}_{1}_{2}_{3}_{4}_{5}.h5'.format(start, numb,  int(thr_r), int(thr_phi), int(thr_z), int(thr_e))
+#rpos_file ='/Users/paola/PETALO/analysis/tables/r_table_full_body_phantom_paper_thr{0}pes.h5'.format(int(thr_r))
 
 print(f'Using r map: {rpos_file}')
 
@@ -244,10 +244,10 @@ for ifile in range(start, start+numb):
             ave_pos1, ave_pos2 = [0, 0, 0], [0, 0, 0]
 
         first_sipm1.append(ave_pos1)
-        first_time1.append(min_t1*tof_bin_size/units.ps)
+        first_time1.append(min_t1)
 
         first_sipm2.append(ave_pos2)
-        first_time2.append(min_t2*tof_bin_size/units.ps)
+        first_time2.append(min_t2)
 
 
 
