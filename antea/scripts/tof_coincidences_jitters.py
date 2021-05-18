@@ -74,10 +74,10 @@ sns_response1, sns_response2    = [], []
 
 ### PETsys thresholds to extract the timestamp
 timestamp_thr = 0.25
-first_sipm1 = [[]]
-first_sipm2 = [[]]
-first_time1 = [[]]
-first_time2 = [[]]
+first_sipm1 = []
+first_sipm2 = []
+first_time1 = []
+first_time2 = []
 true_time1, true_time2          = [], []
 touched_sipms1, touched_sipms2  = [], []
 photo1, photo2 = [], []
